@@ -13,6 +13,8 @@
 
   --font-display: var(--font-playfair);
   --font-body: var(--font-dm-sans);
+
+  --radius-pill: 28px;
 }
 
 @keyframes float1 {
