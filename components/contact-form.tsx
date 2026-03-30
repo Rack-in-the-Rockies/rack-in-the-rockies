@@ -47,19 +47,25 @@ export function ContactForm() {
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <input
-          name="name"
+          name="firstName"
           required
-          placeholder="Your name"
+          placeholder="First name"
           className={inputStyles}
         />
         <input
-          name="email"
-          type="email"
+          name="lastName"
           required
-          placeholder="Email"
+          placeholder="Last name"
           className={inputStyles}
         />
       </div>
+      <input
+        name="email"
+        type="email"
+        required
+        placeholder="Email"
+        className={inputStyles}
+      />
       <input
         name="subject"
         required

@@ -1,6 +1,6 @@
 "use client";
 
-import { products } from "@/data/products";
+import { stores } from "@/data/products";
 import { events } from "@/data/events";
 import { PrimaryButton, SecondaryButton } from "@/components/buttons";
 import { SectionHeader } from "@/components/section-header";
@@ -31,8 +31,8 @@ export default function Home() {
             </em>
           </h1>
           <p className="text-base text-text-mid leading-relaxed mt-3 mb-6 max-w-md mx-auto">
-            Curated mahjong sets, elevated game nights, and unforgettable
-            experiences &mdash; all with a side of mountain&#8209;town charm.
+            Elevated game nights, unforgettable experiences and curated mahjong
+            recommendations&mdash; all with a side of mountain&#8209;town charm.
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             <PrimaryButton href="/shop">Shop My Favorites</PrimaryButton>
@@ -68,15 +68,13 @@ export default function Home() {
       <section className="py-12 px-6 md:px-12 bg-cream text-center">
         <SectionHeader
           tag="The Shop"
-          title="What I'm loving right now"
-          subtitle="My actual favorites — sets, mats, and accessories I use. Each comes with an exclusive discount code."
+          title="Stores I love"
+          subtitle="These are the brands I personally use and recommend. Browse their collections and find something you love."
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto mb-7">
-          {products
-            .filter((p) => ["luxe-mahj-country-club", "cmc-cocktail-line", "wren-mats-premium"].includes(p.id))
-            .map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+          {stores.slice(0, 3).map((store) => (
+            <ProductCard key={store.id} product={store} />
+          ))}
         </div>
         <PrimaryButton href="/shop">View All Favorites</PrimaryButton>
       </section>
@@ -120,41 +118,12 @@ export default function Home() {
               Wine country weekends, mountain retreats, and beachside
               tournaments. Mahjong + travel + your best friends.
             </p>
-            <form
-              action="/api/contact"
-              method="POST"
-              onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
-                e.preventDefault();
-                const form = new FormData(e.currentTarget);
-                await fetch("/api/contact", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    name: "Trips Waitlist",
-                    email: form.get("email"),
-                    subject: "Trips Waitlist Signup",
-                    message: `New waitlist signup: ${form.get("email")}`,
-                  }),
-                });
-                (e.target as HTMLFormElement).reset();
-                alert("You're on the list!");
-              }}
-              className="flex gap-2 justify-center flex-wrap"
+            <a
+              href="/trips"
+              className="inline-block bg-gradient-to-r from-coral to-tangerine text-white px-7 py-3 rounded-pill text-sm font-semibold transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-coral/30"
             >
-              <input
-                name="email"
-                type="email"
-                required
-                placeholder="Your email"
-                className="px-4 py-2.5 rounded-full border border-white/20 bg-white/[0.08] text-white text-sm w-48 placeholder:text-white/40 outline-none focus:border-white/40"
-              />
-              <button
-                type="submit"
-                className="inline-block bg-gradient-to-r from-coral to-tangerine text-white px-7 py-3 rounded-pill text-sm font-semibold transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-coral/30"
-              >
-                Join Waitlist
-              </button>
-            </form>
+              Join the Waitlist
+            </a>
           </div>
         </div>
       </div>

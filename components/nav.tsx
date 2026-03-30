@@ -7,9 +7,57 @@ const links = [
   { href: "/shop", label: "Shop" },
   { href: "/events", label: "Events" },
   { href: "/learn", label: "Learn" },
-  { href: "/about", label: "About" },
-  { href: "/#trips", label: "Trips" },
+  {
+    href: "/about",
+    label: "About",
+    children: [
+      { href: "/about", label: "About" },
+      { href: "/contact", label: "Contact Us" },
+    ],
+  },
+  { href: "/trips", label: "Trips" },
 ];
+
+type NavLink = (typeof links)[number];
+
+function NavItem({ l }: { l: NavLink }) {
+  if (!l.children) {
+    return (
+      <Link
+        href={l.href}
+        className="text-text-mid text-[13px] font-medium tracking-wide uppercase hover:text-coral transition-colors"
+      >
+        {l.label}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="relative group">
+      <Link
+        href={l.href}
+        className="text-text-mid text-[13px] font-medium tracking-wide uppercase hover:text-coral transition-colors"
+      >
+        {l.label}
+        <span className="ml-0.5 text-[10px]">&#9662;</span>
+      </Link>
+      <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+        <ul className="bg-white rounded-xl border border-coral/10 shadow-lg py-1.5 min-w-[140px]">
+          {l.children.map((child) => (
+            <li key={child.href}>
+              <Link
+                href={child.href}
+                className="block px-4 py-2 text-[13px] text-text-mid hover:text-coral hover:bg-coral/[0.04] transition-colors"
+              >
+                {child.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
 
 export function Nav() {
   const [open, setOpen] = useState(false);
@@ -21,15 +69,10 @@ export function Nav() {
       </Link>
 
       {/* Desktop */}
-      <ul className="hidden md:flex gap-7">
+      <ul className="hidden md:flex gap-7 items-center">
         {links.map((l) => (
           <li key={l.href}>
-            <Link
-              href={l.href}
-              className="text-text-mid text-[13px] font-medium tracking-wide uppercase hover:text-coral transition-colors"
-            >
-              {l.label}
-            </Link>
+            <NavItem l={l} />
           </li>
         ))}
       </ul>
@@ -54,17 +97,31 @@ export function Nav() {
       {open && (
         <div className="absolute top-full left-0 right-0 bg-warm-white border-b border-coral/10 shadow-lg md:hidden">
           <ul className="flex flex-col p-4 gap-3">
-            {links.map((l) => (
-              <li key={l.href}>
-                <Link
-                  href={l.href}
-                  className="block text-text-mid text-sm font-medium py-2"
-                  onClick={() => setOpen(false)}
-                >
-                  {l.label}
-                </Link>
-              </li>
-            ))}
+            {links.map((l) =>
+              l.children ? (
+                l.children.map((child) => (
+                  <li key={child.href}>
+                    <Link
+                      href={child.href}
+                      className="block text-text-mid text-sm font-medium py-2"
+                      onClick={() => setOpen(false)}
+                    >
+                      {child.label}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    className="block text-text-mid text-sm font-medium py-2"
+                    onClick={() => setOpen(false)}
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              )
+            )}
             <li>
               <Link
                 href="/events#book"
