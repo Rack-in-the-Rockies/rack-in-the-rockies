@@ -68,6 +68,16 @@ export const stores: Store[] = [
     imageGradient: ["#E8FFF0", "#D8FFE4"],
     logo: "/stores/wren-mats.jpg",
   },
+  {
+    id: "my-fair-mahjong",
+    name: "My Fair Mahjong",
+    description:
+      "Creative, colorful mahjong gifts and accessories. Delivering smiles, obsessed with tiles.",
+    discountPercent: 10,
+    affiliateUrl: "https://myfairmahjong.com/anne113",
+    imageGradient: ["#E8F8F5", "#D5F0EC"],
+    logo: "/stores/my-fair-mahjong.png",
+  },
 ];
 
 // Backward-compatible products array for homepage preview
