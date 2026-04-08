@@ -69,6 +69,16 @@ export const stores: Store[] = [
     logo: "/stores/wren-mats.jpg",
   },
   {
+    id: "love-mahjong-boutique",
+    name: "Love Mahjong Boutique",
+    description:
+      "Charming tiles, bags, and accessories for players who love the game as much as the style.",
+    discountPercent: 10,
+    affiliateUrl: "https://lovemahjongboutique.com/?sca_ref=10991479.qNjdlvrlTFYC",
+    imageGradient: ["#FFF5E8", "#FFE8D8"],
+    logo: "/stores/love-mahjong-boutique.png",
+  },
+  {
     id: "my-fair-mahjong",
     name: "My Fair Mahjong",
     description:
