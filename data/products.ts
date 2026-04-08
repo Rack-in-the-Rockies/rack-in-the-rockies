@@ -83,6 +83,7 @@ export const stores: Store[] = [
     name: "My Fair Mahjong",
     description:
       "Creative, colorful mahjong gifts and accessories. Delivering smiles, obsessed with tiles.",
+    discountCode: "RITR",
     discountPercent: 10,
     affiliateUrl: "https://myfairmahjong.com/anne113",
     imageGradient: ["#E8F8F5", "#D5F0EC"],
