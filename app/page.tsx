@@ -1,5 +1,3 @@
-"use client";
-
 import { stores } from "@/data/products";
 import { events } from "@/data/events";
 import { PrimaryButton, SecondaryButton } from "@/components/buttons";

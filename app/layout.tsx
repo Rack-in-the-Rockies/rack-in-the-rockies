@@ -17,9 +17,31 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Rack in the Rockies | Mahjong. Community. Style.",
+  metadataBase: new URL("https://rackintherockies.com"),
+  title: {
+    default: "Rack in the Rockies | Mahjong. Community. Style.",
+    template: "%s | Rack in the Rockies",
+  },
   description:
     "Curated mahjong sets, elevated game nights, and unforgettable experiences from Denver, Colorado.",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "Rack in the Rockies",
+    title: "Rack in the Rockies | Mahjong. Community. Style.",
+    description:
+      "Curated mahjong sets, elevated game nights, and unforgettable experiences from Denver, Colorado.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Rack in the Rockies | Mahjong. Community. Style.",
+    description:
+      "Curated mahjong sets, elevated game nights, and unforgettable experiences from Denver, Colorado.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
