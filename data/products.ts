@@ -89,6 +89,16 @@ export const stores: Store[] = [
     imageGradient: ["#E8F8F5", "#D5F0EC"],
     logo: "/stores/my-fair-mahjong.png",
   },
+  {
+    id: "mardijong",
+    name: "Mardijong",
+    description:
+      "Festive, Mardi Gras-inspired tile sets designed in New Orleans. Spirited designs that bring the Big Easy to your game night.",
+    discountPercent: 10,
+    affiliateUrl: "https://mardijong.com/RITR",
+    imageGradient: ["#F3EDF9", "#E8DEF2"],
+    logo: "/stores/mardijong.jpg",
+  },
 ];
 
 // Backward-compatible products array for homepage preview
