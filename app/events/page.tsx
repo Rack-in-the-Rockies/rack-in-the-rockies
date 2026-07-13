@@ -2,16 +2,25 @@ import { events } from "@/data/events";
 import { EventCard } from "@/components/event-card";
 import { SectionHeader } from "@/components/section-header";
 import { BookingForm } from "@/components/booking-form";
+import { FeaturedEventHero } from "@/components/featured-event-hero";
 
 export const metadata = {
   title: "Events | Rack in the Rockies",
   description:
-    "Private mahjong parties, lessons, and charity events in Denver, Colorado.",
+    "Mahjong in Bloom — July 28, 2026 at Tee Lee Floral in Olde Town Arvada. Plus private mahjong parties, lessons, and charity events in Denver, Colorado.",
 };
+
+// Re-render hourly so the featured event disappears on its own once it's over.
+export const revalidate = 3600;
 
 export default function EventsPage() {
   return (
     <main>
+      <FeaturedEventHero />
+
+      {/* Gradient Divider */}
+      <div className="h-[3px] bg-gradient-to-r from-coral via-tangerine to-golden opacity-30" />
+
       <section className="py-12 px-6 md:px-12 text-center">
         <SectionHeader
           tag="Events"
