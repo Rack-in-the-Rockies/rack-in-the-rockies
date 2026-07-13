@@ -33,7 +33,7 @@ export default function AboutPage() {
           <p className="text-base text-text-mid leading-relaxed mb-4">
             Rack in the Rockies started with a simple idea: mahjong is better
             when it brings people together. What began as casual game nights
-            with friends in Denver grew into something bigger — a community of
+            with friends in Denver grew into something bigger: a community of
             women who love the game, the style, and the social connection it
             creates.
           </p>

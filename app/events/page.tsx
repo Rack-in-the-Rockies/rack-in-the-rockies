@@ -7,7 +7,7 @@ import { FeaturedEventHero } from "@/components/featured-event-hero";
 export const metadata = {
   title: "Events | Rack in the Rockies",
   description:
-    "Mahjong in Bloom — July 28, 2026 at Tee Lee Floral in Olde Town Arvada. Plus private mahjong parties, lessons, and charity events in Denver, Colorado.",
+    "Mahjong in Bloom: July 28, 2026 at Tee Lee Floral in Olde Town Arvada. Plus private mahjong parties, lessons, and charity events in Denver, Colorado.",
 };
 
 // Re-render hourly so the featured event disappears on its own once it's over.
@@ -25,7 +25,7 @@ export default function EventsPage() {
         <SectionHeader
           tag="Events"
           title="Let's get together"
-          subtitle="From intimate game nights to big charity events — every gathering is better with mahjong."
+          subtitle="From intimate game nights to big charity events, every gathering is better with mahjong."
         />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {events.map((event) => (

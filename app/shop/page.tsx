@@ -7,7 +7,7 @@ import { SectionHeader } from "@/components/section-header";
 export const metadata = {
   title: "Shop Mahjong Favorites | Rack in the Rockies",
   description:
-    "Our favorite mahjong stores and books — sets, mats, accessories, and reads with exclusive discount codes.",
+    "Our favorite mahjong stores and books: sets, mats, accessories, and reads with exclusive discount codes.",
 };
 
 export default function ShopPage() {

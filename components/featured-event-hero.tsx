@@ -78,7 +78,7 @@ export function FeaturedEventHero() {
             Reserve Your Seat
           </a>
           <p className="mt-3 text-xs text-text-light">
-            Seats are limited — registration opens in a new tab.
+            Seats are limited. Registration opens in a new tab.
           </p>
         </div>
       </div>

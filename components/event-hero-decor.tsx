@@ -1,6 +1,6 @@
 /**
  * Decorative flowers, eucalyptus, and mahjong tiles for the Mahjong in Bloom hero.
- * Purely ornamental — hidden from screen readers, non-interactive.
+ * Purely ornamental: hidden from screen readers, non-interactive.
  */
 
 type BloomProps = {

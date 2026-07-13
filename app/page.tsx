@@ -30,7 +30,7 @@ export default function Home() {
           </h1>
           <p className="text-base text-text-mid leading-relaxed mt-3 mb-6 max-w-md mx-auto">
             Elevated game nights, unforgettable experiences and curated mahjong
-            recommendations&mdash; all with a side of mountain&#8209;town charm.
+            recommendations, all with a side of mountain&#8209;town charm.
           </p>
           <div className="flex gap-3 justify-center flex-wrap">
             <PrimaryButton href="/shop">Shop My Favorites</PrimaryButton>
@@ -82,7 +82,7 @@ export default function Home() {
         <SectionHeader
           tag="Events"
           title="Let's get together"
-          subtitle="From intimate game nights to big charity events — every gathering is better with mahjong."
+          subtitle="From intimate game nights to big charity events, every gathering is better with mahjong."
         />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-7">
           {events.map((event) => (

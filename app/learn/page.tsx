@@ -16,12 +16,12 @@ const tips = [
   {
     icon: "👯",
     title: "Find your group",
-    desc: "Mahjong is best with 4 players. Grab your friends, your neighbors, your book club — anyone who loves a good game night.",
+    desc: "Mahjong is best with 4 players. Grab your friends, your neighbors, your book club, anyone who loves a good game night.",
   },
   {
     icon: "🃏",
     title: "Get a good set",
-    desc: "A quality tile set makes all the difference. Check out my favorites in the shop — I've tested them all so you don't have to.",
+    desc: "A quality tile set makes all the difference. Check out my favorites in the shop. I've tested them all so you don't have to.",
   },
   {
     icon: "🎉",
