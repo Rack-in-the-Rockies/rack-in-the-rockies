@@ -3,6 +3,7 @@ import { Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
+import { EventAnnouncementBar } from "@/components/event-announcement-bar";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -44,6 +45,9 @@ export const metadata: Metadata = {
   },
 };
 
+// Re-render hourly so the event announcement bar disappears on its own once it's over.
+export const revalidate = 3600;
+
 export default function RootLayout({
   children,
 }: {
@@ -52,6 +56,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable}`}>
       <body className="font-body bg-warm-white text-text-dark antialiased">
+        <EventAnnouncementBar />
         <Nav />
         {children}
         <Footer />

@@ -5,16 +5,10 @@ import { SectionHeader } from "@/components/section-header";
 import { ProductCard } from "@/components/product-card";
 import { EventCard } from "@/components/event-card";
 import { FloatingTiles } from "@/components/floating-tiles";
-import { EventAnnouncementBar } from "@/components/event-announcement-bar";
-
-// Re-render hourly so the event banner disappears on its own once it's over.
-export const revalidate = 3600;
 
 export default function Home() {
   return (
     <main>
-      <EventAnnouncementBar />
-
       {/* Hero */}
       <section className="relative min-h-[60vh] flex items-center justify-center bg-cream overflow-hidden py-12 px-6">
         {/* Background blushes */}

@@ -1,4 +1,5 @@
 import { featuredEvent, isFeaturedEventOver } from "@/data/featured-event";
+import { EventHeroDecor } from "@/components/event-hero-decor";
 
 export function FeaturedEventHero() {
   if (isFeaturedEventOver()) return null;
@@ -13,6 +14,8 @@ export function FeaturedEventHero() {
         <div className="absolute -top-[25%] -right-[10%] h-[150%] w-[65%] bg-[radial-gradient(ellipse,rgba(255,142,83,0.18)_0%,transparent_70%)]" />
         <div className="absolute -bottom-[15%] -left-[8%] h-full w-1/2 bg-[radial-gradient(ellipse,rgba(255,107,107,0.14)_0%,transparent_70%)]" />
       </div>
+
+      <EventHeroDecor />
 
       <div className="relative z-10 mx-auto max-w-3xl text-center">
         <span className="mb-4 inline-block rounded-full bg-tangerine/10 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[3px] text-tangerine">
