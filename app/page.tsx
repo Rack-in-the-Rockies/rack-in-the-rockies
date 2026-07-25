@@ -5,6 +5,7 @@ import { SectionHeader } from "@/components/section-header";
 import { ProductCard } from "@/components/product-card";
 import { EventCard } from "@/components/event-card";
 import { FloatingTiles } from "@/components/floating-tiles";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 
 export default function Home() {
   return (
@@ -125,6 +126,13 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Newsletter */}
+      <section className="py-12 px-6 md:px-12 bg-warm-white">
+        <div className="max-w-md mx-auto text-center flex flex-col items-center">
+          <NewsletterSignup />
+        </div>
+      </section>
 
       {/* Final CTA */}
       <section className="py-12 px-6 md:px-12 bg-gradient-to-r from-coral to-tangerine text-center text-white">
