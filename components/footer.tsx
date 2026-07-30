@@ -30,6 +30,8 @@ const columns: { title: string; links: FooterLink[] }[] = [
         label: "Instagram",
         external: true,
       },
+      { href: "/terms", label: "Terms" },
+      { href: "/privacy", label: "Privacy" },
     ],
   },
 ];
