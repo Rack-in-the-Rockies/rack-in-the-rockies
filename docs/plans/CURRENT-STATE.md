@@ -28,12 +28,11 @@ repeated in the gotchas section below.
 
 | Branch | Commit | Where it lives | Status |
 | --- | --- | --- | --- |
-| `main` | `9224e6d`, plus this doc | pushed, deployed to production | Carries this doc only, beyond `9c0c10b` |
-| `feat/newsletter-signup` | `eb482ab`, plus this doc | pushed | 22 commits ahead of `main`, not merged |
-| `mahjong-in-bloom` | `39277b4` | local only, **stale** | Superseded, safe to delete |
+| `main` | `9c0c10b`, plus doc commits | pushed, deployed to production | Carries this doc and nothing else beyond `9c0c10b` |
+| `feat/newsletter-signup` | `eb482ab` last code commit, plus doc commits | pushed | Ahead of `main` by all of Phase 1, not merged |
 
-Production is whatever is on `main`. There is no staging branch. `origin` has
-`main` and `feat/newsletter-signup`.
+These are the only two branches, local and remote. Production is whatever is on
+`main`. There is no staging branch.
 
 **Almost all real work is on `feat/newsletter-signup`, not `main`.** Phase 1
 subscriber management is fully implemented there and entirely absent from
@@ -44,9 +43,9 @@ the wrong branch. Start with:
 git checkout feat/newsletter-signup
 ```
 
-`mahjong-in-bloom` is a leftover. Its single commit is patch-identical to
-`39ef510`, which is already on `main`, and `main` has moved several commits past
-it. It carries no unique work.
+A third branch, `mahjong-in-bloom`, was deleted on 2026-07-30. Its single commit
+was patch-identical to `39ef510`, already on `main`, so nothing was lost. Noted
+here only so a stale reference to it elsewhere does not send anyone looking.
 
 ## Active workstreams
 
@@ -145,8 +144,6 @@ is correct and needs nothing.
 - **Which two emails become admins (M6).** Presumed Tyler and the site owner,
   **unverified**.
 - **Whether a next featured event exists.** See workstream 3.
-- **Whether `mahjong-in-bloom` can be deleted.** It carries no unique work. The
-  answer is almost certainly yes.
 
 ## Gotchas
 
