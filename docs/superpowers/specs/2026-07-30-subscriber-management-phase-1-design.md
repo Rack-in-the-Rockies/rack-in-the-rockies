@@ -242,13 +242,23 @@ The module's public surface:
 The principle is that intent must be explicit. A person filling out a booking
 inquiry is asking to book an event, not asking to rejoin a list they left.
 
-| Current status | Explicit signup (`source: newsletter`) | Inquiry forms | Admin |
+| Current status | Explicit signup or own token | Inquiry forms | Admin |
 | --- | --- | --- | --- |
 | none (new) | create as `subscribed` | create as `subscribed` | create |
-| `subscribed` | update names and tags | update names and tags | edit |
+| `subscribed` | update names, union tags | update names, union tags | edit |
 | `unsubscribed` | resubscribe | no change | resubscribe |
 | `bounced` | resubscribe | no change | resubscribe |
 | `complained` | **blocked**, no change | no change | override, requires `force` |
+
+The first column covers both the signup form (`source: newsletter`) and
+`resubscribeByToken` from the unsubscribe confirmation page. Both are explicit
+requests, and both still stop at `complained`: a spam complaint followed by a
+token resubscribe is indistinguishable from a bot replaying a leaked URL, so
+that path goes through the admin override only.
+
+Tag updates are a union, never a replacement. A person who signed up for news
+and later inquires about a trip accumulates both facts; neither write path may
+erase what the other recorded.
 
 Resubscribing sets `status` to `subscribed`. `created_at` is preserved, so the
 original signup date is not lost, and `updated_at` records when they returned.
@@ -327,8 +337,15 @@ Per `AGENTS.md`, no em dashes or en dashes in this or any other user-facing copy
 - Unknown or missing token renders a neutral "we could not find that
   subscription" page rather than an error.
 - The confirmation page includes a "changed your mind?" link that resubscribes
-  via the same token.
+  via the same token, subject to the resubscribe matrix (`complained` stays
+  blocked).
 - The page is not indexed.
+- Known tradeoff, accepted deliberately: a GET that mutates can be triggered by
+  email link scanners on behalf of someone who never clicked. This matches
+  common industry practice for unsubscribe landing pages, the resubscribe link
+  is the recovery path, and Phase 2's `List-Unsubscribe-Post` header (which
+  mail clients use for their native unsubscribe button) is POST-based and
+  immune. Do not "fix" this by adding a confirmation step.
 
 ### Admin portal
 
@@ -340,6 +357,12 @@ Route group under `/admin`, server-rendered.
   is then set to `admin` by hand.
 - The admin layout checks `profiles.role = 'admin'` for the authenticated session
   before rendering anything, and redirects otherwise.
+- **The layout check protects rendering only.** Server actions and route
+  handlers are directly invokable via POST without the layout ever running, so
+  every admin mutation (Resubscribe, the `complained` override) re-verifies the
+  session and `profiles.role = 'admin'` itself before touching data. A single
+  `requireAdmin()` helper, called at the top of each action, keeps this
+  uniform.
 - Authorization must not read from `user_metadata`, which is user-editable in
   Supabase.
 - This replaces the env-var email allowlist of an earlier draft. Changing who has
@@ -428,7 +451,11 @@ address, which Phase 2 sends will also require in their footer.
   resurrected by any client-supplied field.
 - Admin access control: unauthenticated request redirected; authenticated session
   whose profile role is `member` rejected; role read from `profiles` and not from
-  `user_metadata`.
+  `user_metadata`; an admin mutation invoked directly without a session, and with
+  a `member` session, is rejected even though the layout never rendered.
+- Tag union: a subscriber with tags from one source keeps them after a write
+  from another source.
+- Token resubscribe on a `complained` record is blocked.
 - Profile creation trigger: a new `auth.users` row produces exactly one profile
   with role `member`, and a signup that attempts to supply `role` in its metadata
   still lands as `member`.
