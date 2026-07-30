@@ -26,12 +26,16 @@ repeated in the gotchas section below.
 
 | Branch | Commit | Where it lives | Status |
 | --- | --- | --- | --- |
-| `main` | `9c0c10b` | pushed, deployed to production | In sync with `origin/main` |
-| `feat/newsletter-signup` | `9f12dd9` | pushed as of this doc | 2 commits ahead of `main`, not merged |
+| `main` | `9c0c10b` + this doc | pushed, deployed to production | Carries this doc and nothing else beyond `9c0c10b` |
+| `feat/newsletter-signup` | `ac1c833` | pushed | 3 commits ahead of `main`, not merged |
 | `mahjong-in-bloom` | `39277b4` | local only, **stale** | Superseded, safe to delete |
 
-Production is whatever is on `main`. There is no staging branch and no other
-remote branch: `origin` has only `main`.
+Production is whatever is on `main`. There is no staging branch. `origin` has
+`main` and `feat/newsletter-signup`.
+
+This doc lives on both `main` and `feat/newsletter-signup`. All other in-flight
+work lives only on `feat/newsletter-signup`, so **check that branch out before
+concluding something is missing.**
 
 `mahjong-in-bloom` is a leftover. Its single commit is patch-identical to
 `39ef510`, which is already on `main`, and `main` has moved several commits past
@@ -42,7 +46,19 @@ of scope for the sweep that produced this doc.
 
 ### 1. Subscriber management, Phase 1: spec approved, zero implementation
 
-**Driving spec:** [`docs/superpowers/specs/2026-07-30-subscriber-management-phase-1-design.md`](../superpowers/specs/2026-07-30-subscriber-management-phase-1-design.md)
+**Driving spec:** `docs/superpowers/specs/2026-07-30-subscriber-management-phase-1-design.md`
+
+That file is on `feat/newsletter-signup` only. It does not exist on `main`, so
+the path above will not resolve from a checkout of `main`.
+[View it on the branch.](https://github.com/Rack-in-the-Rockies/rack-in-the-rockies/blob/feat/newsletter-signup/docs/superpowers/specs/2026-07-30-subscriber-management-phase-1-design.md)
+
+**The pushed spec may be behind.** At the time this doc was written the spec had
+substantial uncommitted local revisions in progress: a second `public.profiles`
+table with a roles model to support a planned scoring app, and removal of the
+per-subscriber `consent_text` and `consented_at` snapshot in favor of relying on
+the git history of the consent constant. None of that is pushed. If the pushed
+spec still describes a single table, it predates those revisions and Tyler's
+local copy is authoritative.
 
 This is the main in-flight workstream and the reason `feat/newsletter-signup`
 exists. The spec is thorough and marked "Approved, ready for implementation
