@@ -14,7 +14,9 @@ project.
 
 - Next.js 16.2.1, React 19.2.4, Tailwind CSS 4, TypeScript
 - App Router, all pages server-rendered for SEO
+- Supabase (Postgres + Auth) for subscriber data, `@supabase/ssr`
 - Transactional email via Resend (`resend` 6.9.4)
+- Vitest for tests, `npm test`
 - Deployed on Vercel, project `rack-in-the-rockies` (link lives in the
   gitignored `.vercel/`)
 - Content lives in typed modules under `data/`, not a CMS
@@ -26,136 +28,125 @@ repeated in the gotchas section below.
 
 | Branch | Commit | Where it lives | Status |
 | --- | --- | --- | --- |
-| `main` | `9c0c10b` + this doc | pushed, deployed to production | Carries this doc and nothing else beyond `9c0c10b` |
-| `feat/newsletter-signup` | `ac1c833` | pushed | 3 commits ahead of `main`, not merged |
+| `main` | `9224e6d`, plus this doc | pushed, deployed to production | Carries this doc only, beyond `9c0c10b` |
+| `feat/newsletter-signup` | `eb482ab`, plus this doc | pushed | 22 commits ahead of `main`, not merged |
 | `mahjong-in-bloom` | `39277b4` | local only, **stale** | Superseded, safe to delete |
 
 Production is whatever is on `main`. There is no staging branch. `origin` has
 `main` and `feat/newsletter-signup`.
 
-This doc lives on both `main` and `feat/newsletter-signup`. All other in-flight
-work lives only on `feat/newsletter-signup`, so **check that branch out before
-concluding something is missing.**
+**Almost all real work is on `feat/newsletter-signup`, not `main`.** Phase 1
+subscriber management is fully implemented there and entirely absent from
+production. If you check out `main` and conclude the work is missing, you are on
+the wrong branch. Start with:
+
+```
+git checkout feat/newsletter-signup
+```
 
 `mahjong-in-bloom` is a leftover. Its single commit is patch-identical to
 `39ef510`, which is already on `main`, and `main` has moved several commits past
-it. It carries no unique work. It is kept only because deleting branches was out
-of scope for the sweep that produced this doc.
+it. It carries no unique work.
 
 ## Active workstreams
 
-### 1. Subscriber management, Phase 1: spec approved, zero implementation
+### 1. Subscriber management, Phase 1: code complete, blocked on setup
 
-**Driving spec:** `docs/superpowers/specs/2026-07-30-subscriber-management-phase-1-design.md`
+The dominant workstream. Both driving documents live on
+`feat/newsletter-signup` and neither exists on `main`, so these paths will not
+resolve from a `main` checkout:
 
-That file is on `feat/newsletter-signup` only. It does not exist on `main`, so
-the path above will not resolve from a checkout of `main`.
-[View it on the branch.](https://github.com/Rack-in-the-Rockies/rack-in-the-rockies/blob/feat/newsletter-signup/docs/superpowers/specs/2026-07-30-subscriber-management-phase-1-design.md)
+- `docs/superpowers/specs/2026-07-30-subscriber-management-phase-1-design.md`
+  ([on the branch](https://github.com/Rack-in-the-Rockies/rack-in-the-rockies/blob/feat/newsletter-signup/docs/superpowers/specs/2026-07-30-subscriber-management-phase-1-design.md)),
+  the design and the reasoning behind it
+- `docs/superpowers/plans/2026-07-30-subscriber-management-phase-1.md`
+  ([on the branch](https://github.com/Rack-in-the-Rockies/rack-in-the-rockies/blob/feat/newsletter-signup/docs/superpowers/plans/2026-07-30-subscriber-management-phase-1.md)),
+  the task-by-task implementation plan, including the manual prerequisites list
 
-**The pushed spec may be behind.** At the time this doc was written the spec had
-substantial uncommitted local revisions in progress: a second `public.profiles`
-table with a roles model to support a planned scoring app, and removal of the
-per-subscriber `consent_text` and `consented_at` snapshot in favor of relying on
-the git history of the consent constant. None of that is pushed. If the pushed
-spec still describes a single table, it predates those revisions and Tyler's
-local copy is authoritative.
+**The code is written.** 17 commits took this from spec to a complete Phase 1.
+All 34 tests pass across 4 test files and `npm run lint` is clean, both verified
+2026-07-30.
 
-This is the main in-flight workstream and the reason `feat/newsletter-signup`
-exists. The spec is thorough and marked "Approved, ready for implementation
-planning". **No code from it has been written yet.** The branch contains the
-spec and the older signup UI, nothing else.
+What exists on the branch:
 
-The spec's premise is that three things are half-built and in conflict:
+| Area | Files |
+| --- | --- |
+| Schema | `supabase/migrations/20260730225236_subscriber_management_phase_1.sql`, `profiles` + `subscribers` + RLS |
+| Pure logic | `lib/subscriber-rules.ts`, `lib/rate-limit.ts` |
+| Write path | `lib/subscribers.ts`, the single entry point every caller uses |
+| Supabase clients | `lib/supabase/{admin,server,proxy}.ts` |
+| Auth | `lib/auth.ts`, `proxy.ts`, `app/auth/confirm/route.ts` |
+| Public endpoint | `app/api/subscribe/route.ts`, honeypot and rate limit |
+| Subscriber pages | `app/unsubscribe/`, `app/resubscribe/` |
+| Admin | `app/admin/(gated)/`, `app/admin/login/`, `app/admin/actions.ts` |
+| Compliance | `app/terms/`, `app/privacy/`, `lib/business.ts`, `lib/consent.ts` |
+| Forms | `components/consent-notice.tsx`, all four forms route through `subscribe()` |
 
-1. `components/newsletter-signup.tsx` posts directly to a Kit (ConvertKit) URL
-   that is still a `REPLACE_ME` placeholder
-2. `app/api/contact/route.ts` silently adds every form submitter to a Resend
-   audience with no consent notice and no unsubscribe path
-3. The owner's real contact list lives in a spreadsheet, connected to neither
+The two problems the spec was written to fix are both resolved on the branch:
+`KIT_FORM_URL` and its `REPLACE_ME` placeholder are gone (the signup component
+now posts to `/api/subscribe`), and `resend.contacts.create` plus
+`RESEND_AUDIENCE_ID` are gone from `app/api/contact/route.ts`.
 
-Phase 1 replaces all three with a Supabase-backed `subscribers` table, one
-server-side write path in `lib/subscribers.ts`, a `/api/subscribe` route, a
-token-based `/unsubscribe` page, and an `/admin` portal. Phase 1 explicitly does
-not send any email; that is Phase 2.
+**Blocked on 8 manual setup steps, none of them done.** They are M1 through M8 in
+the plan's "Manual prerequisites" section and they need dashboard access, so a
+coding session cannot clear them. Verified from the repo: there is no
+`.env.local`, and `supabase/.temp/` contains no project ref, so the CLI is not
+linked to a remote project.
 
-**Next steps, in order:**
+In dependency order:
 
-1. Write an implementation plan from the spec. The spec is a design doc, not a
-   task list.
-2. Create the Supabase project and the `subscribers` migration. Use
-   `supabase migration new`, do not hand-author migration filenames.
-3. Build `lib/subscribers.ts` and its tests first. The resubscribe status matrix
-   in the spec is the part most likely to be got wrong, and the spec lists the
-   exact cases to cover.
-4. Then `/api/subscribe`, then the form changes, then `/unsubscribe`, then
-   `/admin`.
-5. Run the two data migrations (spreadsheet CSV, existing Resend audience) last.
+1. **M1, M2, M3.** Create the Supabase project, `supabase link --project-ref
+   <ref>`, then put the URL, publishable key, and secret key in `.env.local` and
+   in the Vercel project env vars. Nothing runs before this.
+2. **M4, M5.** Disable public signup in Auth, and set the magic link email
+   template and Site URL.
+3. **M6.** Invite the two admin users, then promote them with the SQL in the
+   plan. The admin portal is unusable until a `profiles` row has `role = 'admin'`.
+4. **M7.** Import the spreadsheet CSV and the Resend audience export.
+5. **M8.** Supply the full business mailing address. Not a Phase 1 blocker, but
+   required before Phase 2 sends. See open decisions.
 
-**Blocked on nothing in the repo.** Whether the Supabase project has been
-created outside the repo is **unverified**. There is no Supabase dependency in
-`package.json` and no Supabase keys in `.env.local.example`, so assume it does
-not exist yet.
+**Next steps for a coding session:** there is little code left to write. The
+useful work is review of the branch, then merging it. Do not start Phase 2. It
+gets its own spec once Phase 1 is live.
 
-### 2. Newsletter signup UI: done but non-functional, unshipped
+### 2. Newsletter signup: fixed on the branch, still broken in production
 
-**Commit:** `1e695d0` on `feat/newsletter-signup`
+`components/newsletter-signup.tsx` appears in the footer and on the homepage.
 
-`components/newsletter-signup.tsx` is built and placed in two spots: the footer
-(above the link columns) and the homepage (between the Learn/Trips split and the
-final CTA). It has idle/sending/sent/error states and a `light` variant for dark
-backgrounds.
-
-**It does not work.** `KIT_FORM_URL` at
-`components/newsletter-signup.tsx:8` is
-`https://app.kit.com/forms/REPLACE_ME/subscriptions`. Submissions go nowhere and
-the component reports an error to the user.
-
-Do not fix this by filling in a Kit URL. The Phase 1 spec explicitly rejects Kit
-and instructs removing `KIT_FORM_URL` and the direct third-party POST entirely,
-replacing it with a POST to `/api/subscribe`. This component is superseded by
-workstream 1 and should change as part of it.
-
-Because this is unshipped, production currently shows no signup form at all,
-which is the correct state given the form would not work.
-
-The same commit also points the footer Instagram link at
-`instagram.com/rackintherockies2026`. That part is good and is only unshipped
-because it shares a commit with the signup work.
+On `feat/newsletter-signup` it posts to `/api/subscribe` and works. On `main`,
+which is what production serves, it still posts to a Kit URL containing
+`REPLACE_ME`, so **every signup attempt in production today fails and shows the
+user an error.** That is the strongest argument for merging the branch.
 
 ### 3. Mahjong in Bloom event: shipped, now expired
 
 **Files:** `data/featured-event.ts`, `components/featured-event-hero.tsx`,
 `components/event-announcement-bar.tsx`
 
-Shipped to `main` and live. The featured-event system auto-hides the hero and
-homepage announcement bar after `endsAt` passes, and pages revalidate hourly.
+Live on `main`. The hero and homepage announcement bar auto-hide after `endsAt`
+passes, and pages revalidate hourly.
 
-`endsAt` is `2026-07-28T20:00:00-06:00`, which is in the past. **The site is
+`endsAt` is `2026-07-28T20:00:00-06:00`, which is in the past, so **the site is
 currently showing no featured event.** If there is a next event, updating
-`data/featured-event.ts` is a one-file change. If there is not, the current
-state is correct and needs nothing.
-
-### 4. Compliance pages: required by Phase 1, do not exist
-
-The Phase 1 spec requires `/terms` and `/privacy`, linked from the footer, both
-stating the business's physical mailing address. Neither route exists under
-`app/`, and the footer has no link to either. This is a hard dependency of
-workstream 1, not optional polish, and the mailing address is an input only the
-owner can supply.
+`data/featured-event.ts` is a one-file change. If there is not, the current state
+is correct and needs nothing.
 
 ## Open decisions
 
-- **Business mailing address for `/terms` and `/privacy`.** Required by the
-  Phase 1 spec and by Phase 2 sends. Not present anywhere in the repo.
-- **Whether a next featured event exists.** See workstream 3. If yes,
-  `data/featured-event.ts` needs new values.
+- **The full business mailing address (M8).** `lib/business.ts` ships
+  `BUSINESS_LOCATION = "Denver, Colorado"`, which is fine for the website but is
+  not sufficient for CAN-SPAM footers once Phase 2 sends. Only Tyler can supply
+  it.
+- **When to merge `feat/newsletter-signup` to `main`.** Merging fixes the broken
+  production signup form and ships `/terms` and `/privacy`. But the admin portal
+  and `/api/subscribe` will error until M1 through M3 give production its
+  Supabase env vars, so the merge and the setup should land together.
+- **Which two emails become admins (M6).** Presumed Tyler and the site owner,
+  **unverified**.
+- **Whether a next featured event exists.** See workstream 3.
 - **Whether `mahjong-in-bloom` can be deleted.** It carries no unique work. The
-  answer is almost certainly yes, but the branch is left alone until confirmed.
-- **Whether `feat/newsletter-signup` should merge to `main` before Phase 1 is
-  built.** Merging ships a signup form that does not work. Leaving it unmerged
-  means the Instagram link fix stays unshipped too. Splitting the Instagram fix
-  into its own commit onto `main` is the obvious resolution but has not been
-  done.
+  answer is almost certainly yes.
 
 ## Gotchas
 
@@ -164,44 +155,50 @@ Things a cold session will get wrong without being told.
 **This is not the Next.js in your training data.** `AGENTS.md` says version
 16.2.1 has breaking changes to APIs, conventions, and file structure. Read the
 relevant guide in `node_modules/next/dist/docs/` before writing route handlers,
-middleware, or auth code. Do not write App Router APIs from memory.
+middleware, or auth code. Note the repo has a root `proxy.ts`, not a
+`middleware.ts`. Do not write App Router APIs from memory.
 
 **No em dashes or en dashes in user-facing copy, ever.** This is an `AGENTS.md`
 rule and it has already been enforced repo-wide once, in commit `7386c6a`. It
 covers page text, button labels, metadata descriptions, and data files. Time
 ranges use a plain hyphen: `4:45 - 8:00 PM`.
 
-**`app/api/contact/route.ts` writes to a Resend audience today.** The
-`resend.contacts.create` call is guarded by `RESEND_AUDIENCE_ID` being set and
-its failure is swallowed by `.catch(() => {})` so the form never fails. That
-audience likely holds real contacts collected without a consent notice, which is
-exactly why the spec has a `resend-migration` source. Do not delete this code
-path before migrating the data out of it.
+**`lib/consent.ts` is an audit trail, not a constants file.** The design
+deliberately stores no `consent_text` or `consented_at` per subscriber. Instead
+the consent wording lives alone in that one module, and its git history is the
+record of what any given subscriber agreed to, paired with their `created_at`.
+Changing that file rewrites the meaning of past consent, so treat edits to it as
+a data decision and not a copy tweak.
 
-**The signup component is a client component posting cross-origin.** It uses
-`"use client"` and `fetch` straight from the browser to a third-party host. Phase
-1 removes this. Do not build on it.
+**`SUPABASE_SECRET_KEY` must never be `NEXT_PUBLIC_` prefixed.** RLS is enabled
+with no policies for `anon` or `authenticated`, so all access runs server-side
+through the secret key. Prefixing it would expose the whole subscriber table.
 
-**`SUPABASE_SECRET_KEY` must never be `NEXT_PUBLIC_` prefixed.** The spec's RLS
-design deliberately grants no policies to `anon` or `authenticated` and relies
-entirely on server-side access with the secret key. Prefixing that variable
-would expose the whole subscriber table.
+**Admin authorization reads `public.profiles.role`, never `user_metadata`.**
+Supabase's `raw_user_meta_data` is user-editable. `app/admin/actions.ts`
+re-checks the role inside the server action rather than trusting the layout gate.
 
-**Admin authorization must not read `user_metadata`.** It is user-editable in
-Supabase. The spec calls for a server-side email allowlist instead.
+**Every subscriber write goes through `lib/subscribers.ts`.** No caller talks to
+Supabase directly. That is what keeps the resubscribe rules auditable in one
+place and the vendor choice reversible. Preserve it.
+
+**`complained` is a hard stop.** No client-supplied field can resurrect a
+complained address, and `source` is set server-side precisely so the resubscribe
+rules cannot be bypassed. The tests cover this. Do not relax it.
 
 **Secrets are not in the repo and should stay that way.** `.gitignore` covers
-`.env*` except `.env*.example`, plus `.vercel/`, `.next/`, and `.DS_Store`.
-`.env.local.example` holds placeholder values only.
+`.env*` except `.env*.example`, plus `.vercel/`, `.next/`, `.DS_Store`.
+`supabase/.gitignore` additionally covers `.env.local`, `.env.keys`, and
+`.temp/`. `.env.local.example` holds `xxxx` placeholders only.
 
 ## Verification notes
 
-Verified from repo contents and git history: branch and deploy state, all file
-paths and line references, the `REPLACE_ME` placeholder, the Resend audience
-write, the absent `/terms` and `/privacy` routes, the expired `endsAt`, the
-`mahjong-in-bloom` patch-id match, dependency versions.
+Verified from repo contents, git history, and a passing `npm test` run on
+2026-07-30: branch and deploy state, the file inventory above, the removal of
+`KIT_FORM_URL` and `resend.contacts.create`, the absence of `.env.local` and of a
+linked Supabase project ref, the expired `endsAt`, dependency versions, and that
+all 8 manual prerequisites are still unchecked in the plan.
 
-Unverified and assumed: whether a Supabase project exists outside the repo,
-whether `RESEND_AUDIENCE_ID` is actually set in the Vercel environment and
-therefore whether the audience write is live in production, and the size and
-contents of the owner's spreadsheet list.
+Unverified and assumed: whether a Supabase project exists in the dashboard but
+was simply never linked from this checkout, which two addresses are intended as
+admins, and the size and contents of the owner's spreadsheet list.
