@@ -1,11 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-// TODO: replace with the real Kit (ConvertKit) embedded form action URL once the
-// form exists. Grab it from the form's embed code in Kit; it looks like:
-// https://app.kit.com/forms/1234567/subscriptions
-const KIT_FORM_URL = "https://app.kit.com/forms/REPLACE_ME/subscriptions";
+import { ConsentNotice } from "@/components/consent-notice";
 
 type NewsletterSignupProps = {
   /** Use on dark backgrounds (footer, dark sections). */
@@ -22,10 +18,13 @@ export function NewsletterSignup({ light }: NewsletterSignupProps) {
     setStatus("sending");
     const form = new FormData(e.currentTarget);
     try {
-      const res = await fetch(KIT_FORM_URL, {
+      const res = await fetch("/api/subscribe", {
         method: "POST",
-        headers: { Accept: "application/json" },
-        body: form,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.get("email"),
+          website: form.get("website"),
+        }),
       });
       setStatus(res.ok ? "sent" : "error");
     } catch {
@@ -57,7 +56,7 @@ export function NewsletterSignup({ light }: NewsletterSignupProps) {
             light ? "text-golden" : "text-tangerine"
           }`}
         >
-          You&apos;re in! Check your inbox to confirm.
+          You&apos;re in! Watch your inbox for the next announcement.
         </p>
       ) : (
         <form
@@ -65,7 +64,15 @@ export function NewsletterSignup({ light }: NewsletterSignupProps) {
           className="flex flex-col sm:flex-row gap-2 max-w-md"
         >
           <input
-            name="email_address"
+            type="text"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+            className="absolute -left-[9999px] h-0 w-0 opacity-0"
+          />
+          <input
+            name="email"
             type="email"
             required
             placeholder="you@email.com"
@@ -80,6 +87,12 @@ export function NewsletterSignup({ light }: NewsletterSignupProps) {
             {status === "sending" ? "Signing up..." : "Sign Me Up"}
           </button>
         </form>
+      )}
+
+      {status !== "sent" && (
+        <div className="mt-2">
+          <ConsentNotice light={light} />
+        </div>
       )}
 
       {status === "error" && (

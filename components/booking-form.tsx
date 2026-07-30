@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ConsentNotice } from "@/components/consent-notice";
 
 const inputStyles =
   "w-full px-4 py-2.5 rounded-xl border border-coral/10 text-sm text-text-dark placeholder:text-text-light focus:outline-none focus:border-coral/30 focus:ring-1 focus:ring-coral/20 bg-warm-white";
@@ -155,6 +156,7 @@ export function BookingForm() {
         placeholder="Tell me about your event..."
         className={`${inputStyles} w-full`}
       />
+      <ConsentNotice />
       <button
         type="submit"
         disabled={status === "sending"}
