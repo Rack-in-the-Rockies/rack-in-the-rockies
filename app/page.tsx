@@ -102,7 +102,7 @@ export default function Home() {
         <div className="bg-cream py-12 px-6 md:px-10 flex flex-col items-center justify-center text-center">
           <SectionHeader tag="Learn" title="New to mahjong?" />
           <p className="text-sm text-text-mid leading-relaxed max-w-sm mb-5 -mt-4">
-            It looks intimidating, but once you learn the basics you'll wonder
+            It looks intimidating, but once you learn the basics you&apos;ll wonder
             why you waited. Beginner-friendly resources and hands-on lessons that
             get you playing fast.
           </p>

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
 
-let _resend: import("resend").Resend | null = null;
+let _resend: Resend | null = null;
 
 function getResend() {
   if (!_resend) {
-    const { Resend } = require("resend");
     _resend = new Resend(process.env.RESEND_API_KEY);
   }
-  return _resend!;
+  return _resend;
 }
 
 export async function POST(req: Request) {
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to send" }, { status: 500 });
   }
 }
