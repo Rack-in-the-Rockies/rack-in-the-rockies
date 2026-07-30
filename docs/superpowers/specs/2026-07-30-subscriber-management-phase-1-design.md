@@ -17,7 +17,8 @@ Three things are half-built and in conflict:
 2. `app/api/contact/route.ts:71` silently adds every contact, booking, and trips
    waitlist submitter to a Resend audience, with no consent notice and no
    unsubscribe path.
-3. Annie's actual list of people lives in a spreadsheet, disconnected from both.
+3. The site owner's actual list of people lives in a spreadsheet, disconnected
+   from both.
 
 ## Goals
 
@@ -28,7 +29,7 @@ send anything.
 - Subscriber records owned in the project's own Postgres, not a vendor
 - A visible consent notice at the point of collection, recorded per subscriber
 - Working one-click unsubscribe and a supported path back
-- An admin portal Annie can log into without developer tooling
+- An admin portal the site owner can log into without developer tooling
 - Existing contacts imported from the spreadsheet and the Resend audience
 
 ## Non-goals
@@ -39,28 +40,28 @@ Explicitly out of scope for Phase 1:
 - The announcement composer, templates, and preview (Phase 2)
 - Send pipeline, batching, rate limiting, `List-Unsubscribe` headers (Phase 2)
 - Bounce and complaint webhooks (Phase 2, when there is sending to react to)
-- Syncing subscribers to Resend so Annie can send from Resend's editor in the
-  interim. Considered and rejected: Annie can wait for Phase 2, and skipping it
-  avoids throwaway code and a two-store sync problem.
+- Syncing subscribers to Resend so the site owner can send from Resend's editor
+  in the interim. Considered and rejected: the interim capability can wait for
+  Phase 2, and skipping it avoids throwaway code and a two-store sync problem.
 - Open and click tracking, segments beyond simple tags, automations, sequences
 - Any general CRM capability such as notes, tasks, or relationship history
 
-Resend continues to handle transactional email (the inquiry notifications to
-Annie) unchanged. It is no longer used for contact storage.
+Resend continues to handle transactional email (the inquiry notifications to the
+site owner) unchanged. It is no longer used for contact storage.
 
 ## Context and decisions
 
 **Why not a hosted platform (Kit, Mailchimp, Beehiiv).** Considered seriously.
 Kit was the leading candidate and the existing signup component was already aimed
 at it. Rejected in favor of building on Supabase for data ownership, no
-per-subscriber cost, a single branded login for Annie at the site's own domain,
-and the option to grow real CRM features later without adding a vendor.
+per-subscriber cost, a single branded login for the site owner at the site's own
+domain, and the option to grow real CRM features later without adding a vendor.
 
-**Why a template composer and not an editor (Phase 2).** Annie is not technical.
-A constrained composer with fixed templates and structured fields produces
-on-brand output by construction and is a fraction of the work of a drag and drop
-builder. Recorded here because it shapes what Phase 1's data model needs to
-support.
+**Why a template composer and not an editor (Phase 2).** The site owner is not a
+developer. A constrained composer with fixed templates and structured fields
+produces on-brand output by construction and is a fraction of the work of a drag
+and drop builder. Recorded here because it shapes what Phase 1's data model
+needs to support.
 
 **Why a consent notice and not a checkbox.** Product decision. An unchecked
 opt-in box is the stricter option and was recommended, but a visible notice at
@@ -134,15 +135,15 @@ newsletter-signup.tsx ────→ POST /api/subscribe ──┐
                                                   │
 contact-form.tsx ──────┐                          ├──→ lib/subscribers.ts ──→ Supabase
 booking-form.tsx ──────┼──→ POST /api/contact ────┤            ▲
-waitlist-form.tsx ─────┘    (also emails Annie)   │            │
+waitlist-form.tsx ─────┘    (also emails owner)   │            │
                                                   │            │
    /unsubscribe?token= ───────────────────────────┘            │
    /admin (import, resubscribe) ───────────────────────────────┘
 ```
 
 The three inquiry forms keep posting to `/api/contact`, which is what sends the
-notification to Annie. That route then calls `subscribe()` as a side effect. Only
-the explicit signup component uses `/api/subscribe`.
+notification to the owner. That route then calls `subscribe()` as a side effect.
+Only the explicit signup component uses `/api/subscribe`.
 
 Every path that writes a subscriber goes through `lib/subscribers.ts`. No caller
 talks to Supabase directly. This is what makes the vendor choice reversible and
@@ -180,7 +181,8 @@ Resubscribing sets `status` to `subscribed` and writes a new `consented_at` and
 
 `complained` is the one hard stop. That person marked mail as spam. Automatically
 re-adding them risks the sending domain's reputation, which is shared with the
-transactional email that carries booking confirmations. Annie can override from
+transactional email that carries booking confirmations. The owner can override
+from
 the admin when she knows the story, behind an explicit confirmation.
 
 ## Components
@@ -225,8 +227,8 @@ Public route handler. Accepts `{ email, firstName?, lastName?, honeypot? }`.
 - Replace the `resend.contacts.create` call at line 71 with a call to
   `subscribe()`, preserving the existing `source` derivation
 - The subscribe call remains non-blocking with respect to the inquiry email to
-  Annie. A subscriber write failure must not cause the form to report failure,
-  matching current behavior.
+  the owner. A subscriber write failure must not cause the form to report
+  failure, matching current behavior.
 
 ### Consent copy
 
@@ -286,7 +288,7 @@ Route group under `/admin`, server-rendered.
 
 Two one-time data moves, both run through `importSubscribers`:
 
-1. Annie's spreadsheet, exported to CSV, loaded through `/admin/import`.
+1. The owner's spreadsheet, exported to CSV, loaded through `/admin/import`.
 2. The existing Resend audience. `app/api/contact/route.ts` has been writing to
    it, so it likely holds real contacts. Export via the Resend API and load with
    `source: "resend-migration"`, with `consent_text` noting these predate the
@@ -316,7 +318,7 @@ address, which Phase 2 sends will also require in their footer.
 ## Error handling
 
 - Subscriber writes never block the user-facing outcome of a form. An inquiry
-  still reaches Annie if the subscriber write fails.
+  still reaches the owner if the subscriber write fails.
 - Failed subscriber writes are logged server-side. Phase 1 has no retry queue.
 - Invalid email input returns a validation error to the form.
 - Duplicate signups are a success, not an error.
