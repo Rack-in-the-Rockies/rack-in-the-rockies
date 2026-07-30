@@ -5,6 +5,7 @@ import { SectionHeader } from "@/components/section-header";
 import { ProductCard } from "@/components/product-card";
 import { EventCard } from "@/components/event-card";
 import { FloatingTiles } from "@/components/floating-tiles";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 
 export default function Home() {
   return (
@@ -101,7 +102,7 @@ export default function Home() {
         <div className="bg-cream py-12 px-6 md:px-10 flex flex-col items-center justify-center text-center">
           <SectionHeader tag="Learn" title="New to mahjong?" />
           <p className="text-sm text-text-mid leading-relaxed max-w-sm mb-5 -mt-4">
-            It looks intimidating, but once you learn the basics you'll wonder
+            It looks intimidating, but once you learn the basics you&apos;ll wonder
             why you waited. Beginner-friendly resources and hands-on lessons that
             get you playing fast.
           </p>
@@ -125,6 +126,13 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Newsletter */}
+      <section className="py-12 px-6 md:px-12 bg-warm-white">
+        <div className="max-w-md mx-auto text-center flex flex-col items-center">
+          <NewsletterSignup />
+        </div>
+      </section>
 
       {/* Final CTA */}
       <section className="py-12 px-6 md:px-12 bg-gradient-to-r from-coral to-tangerine text-center text-white">

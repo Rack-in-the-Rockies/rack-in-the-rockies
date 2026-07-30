@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 
-const columns = [
+type FooterLink = { href: string; label: string; external?: boolean };
+
+const columns: { title: string; links: FooterLink[] }[] = [
   {
     title: "Shop",
     links: [
@@ -22,7 +25,13 @@ const columns = [
     title: "Connect",
     links: [
       { href: "/contact", label: "Contact" },
-      { href: "#", label: "Instagram" },
+      {
+        href: "https://instagram.com/rackintherockies2026",
+        label: "Instagram",
+        external: true,
+      },
+      { href: "/terms", label: "Terms" },
+      { href: "/privacy", label: "Privacy" },
     ],
   },
 ];
@@ -30,6 +39,9 @@ const columns = [
 export function Footer() {
   return (
     <footer className="bg-[#2D2424] text-white/70 px-6 md:px-12 pt-10 pb-6">
+      <div className="max-w-5xl mx-auto pb-8 mb-8 border-b border-white/10">
+        <NewsletterSignup light />
+      </div>
       <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
         <div className="col-span-2 md:col-span-1">
           <p className="font-display text-lg font-bold text-coral mb-2">
@@ -49,6 +61,9 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
+                    {...(link.external
+                      ? { target: "_blank", rel: "noopener" }
+                      : {})}
                     className="text-xs text-white/60 hover:text-coral transition-colors"
                   >
                     {link.label}

@@ -5,6 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
+      disallow: ["/admin", "/unsubscribe", "/resubscribe", "/api"],
     },
     sitemap: "https://rackintherockies.com/sitemap.xml",
   };

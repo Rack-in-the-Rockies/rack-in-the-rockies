@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ConsentNotice } from "@/components/consent-notice";
 
 export function WaitlistForm() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
@@ -66,6 +67,7 @@ export function WaitlistForm() {
         placeholder="Email"
         className="w-full px-4 py-2.5 rounded-xl border border-white/20 bg-white/[0.08] text-white text-sm placeholder:text-white/40 outline-none focus:border-white/40"
       />
+      <ConsentNotice light />
       <button
         type="submit"
         disabled={status === "sending"}

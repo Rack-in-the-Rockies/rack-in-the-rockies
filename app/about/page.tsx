@@ -39,8 +39,8 @@ export default function AboutPage() {
           </p>
           <p className="text-base text-text-mid leading-relaxed">
             Today, we curate the best mahjong products, host unforgettable
-            events, and bring players together across Colorado. Whether you're
-            a seasoned player or just discovering the game, there's a seat at
+            events, and bring players together across Colorado. Whether you&apos;re
+            a seasoned player or just discovering the game, there&apos;s a seat at
             our table for you.
           </p>
         </div>

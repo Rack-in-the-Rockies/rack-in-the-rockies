@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
 
-let _resend: import("resend").Resend | null = null;
+let _resend: Resend | null = null;
 
 function getResend() {
   if (!_resend) {
-    const { Resend } = require("resend");
     _resend = new Resend(process.env.RESEND_API_KEY);
   }
-  return _resend!;
+  return _resend;
 }
 
 export async function POST(req: Request) {
@@ -25,7 +25,6 @@ export async function POST(req: Request) {
     message,
     subject,
     name,
-    source,
   } = body;
 
   const displayName = firstName ? `${firstName} ${lastName}` : name;
@@ -65,24 +64,28 @@ export async function POST(req: Request) {
       replyTo: email,
     });
 
-    // Save contact to Resend audience for future newsletters
-    if (process.env.RESEND_AUDIENCE_ID) {
-      const contactSource = source || (eventType ? "event-inquiry" : "contact");
-      await resend.contacts.create({
-        audienceId: process.env.RESEND_AUDIENCE_ID,
+    // Side-effect subscribe. Source derived server-side; inquiry sources can
+    // never resurrect an unsubscribed record (see lib/subscriber-rules.ts).
+    // Must never block the inquiry email that already went to the owner.
+    try {
+      const { subscribe } = await import("@/lib/subscribers");
+      const { deriveContactSource } = await import("@/lib/subscriber-rules");
+      const tags = [eventType, skillLevel].filter(
+        (t): t is string => typeof t === "string" && t.length > 0
+      );
+      await subscribe({
         email,
-        firstName: firstName || name || "",
-        lastName: lastName || "",
-        properties: {
-          source: contactSource,
-          ...(eventType && { eventType }),
-          ...(skillLevel && { skillLevel }),
-        },
-      }).catch(() => {}); // Don't fail the form if contact save fails
+        firstName: firstName || name || undefined,
+        lastName: lastName || undefined,
+        source: deriveContactSource(body),
+        tags,
+      });
+    } catch (subscribeError) {
+      console.error("contact subscribe side effect failed", subscribeError);
     }
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to send" }, { status: 500 });
   }
 }
