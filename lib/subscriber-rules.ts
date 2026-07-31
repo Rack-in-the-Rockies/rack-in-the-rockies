@@ -39,3 +39,35 @@ export function deriveContactSource(body: {
   if (typeof body.eventType === "string" && body.eventType) return "booking";
   return "contact";
 }
+
+/** RFC 4180 field escaping. */
+export function csvField(value: string | null | undefined): string {
+  const s = value ?? "";
+  return /[",\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
+}
+
+export function subscribersToCsv(
+  rows: Array<{
+    email: string;
+    first_name: string | null;
+    last_name: string | null;
+    status: string;
+    source: string;
+    tags: string[];
+    created_at?: string;
+  }>
+): string {
+  const header = "email,first_name,last_name,status,source,tags,created_at";
+  const lines = rows.map((r) =>
+    [
+      csvField(r.email),
+      csvField(r.first_name),
+      csvField(r.last_name),
+      csvField(r.status),
+      csvField(r.source),
+      csvField(r.tags.join(", ")),
+      csvField(r.created_at ?? ""),
+    ].join(",")
+  );
+  return [header, ...lines].join("\n") + "\n";
+}
