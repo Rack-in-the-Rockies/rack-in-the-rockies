@@ -1,11 +1,12 @@
 <!--
-  Supabase Auth magic link template (hosted project: nguoyyupddfeglrnrute).
-  This file is the versioned source of truth; the live copy is pasted into
-  Supabase Dashboard -> Authentication -> Email Templates -> Magic Link.
+  Supabase Auth invite template (hosted project: nguoyyupddfeglrnrute).
+  Sent when a new admin user is invited from the dashboard. This file is the
+  versioned source of truth; the live copy is pasted into Supabase Dashboard
+  -> Authentication -> Email Templates -> Invite user.
   If you edit this file, re-paste it there.
 
   Palette mirrors emails/theme.ts (which mirrors app/globals.css).
-  The href must keep the token-hash confirm flow exactly as below.
+  The href must keep the token-hash confirm flow with type=invite.
 -->
 <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: #FFF9F5; margin: 0; padding: 0;">
   <tr>
@@ -21,16 +22,16 @@
               </tr>
               <tr>
                 <td style="padding: 28px 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;">
-                  <p style="color: #2D2424; font-family: Georgia, 'Times New Roman', serif; font-size: 22px; font-weight: 700; line-height: 28px; margin: 0 0 12px;">Sign in to the admin</p>
-                  <p style="color: #6B5454; font-size: 15px; line-height: 23px; margin: 0 0 22px;">Click the button below to sign in to the Rack in the Rockies admin. This link expires in one hour and can be used once.</p>
+                  <p style="color: #2D2424; font-family: Georgia, 'Times New Roman', serif; font-size: 22px; font-weight: 700; line-height: 28px; margin: 0 0 12px;">You're invited</p>
+                  <p style="color: #6B5454; font-size: 15px; line-height: 23px; margin: 0 0 22px;">You have been invited to the Rack in the Rockies admin, where we manage our subscriber list and event announcements. Click below to accept the invite and sign in. No password needed, now or ever: we will email you a sign-in link each time.</p>
                   <table cellpadding="0" cellspacing="0" role="presentation" align="center" style="margin: 0 auto 22px;">
                     <tr>
                       <td style="background-color: #FF6B6B; border-radius: 28px;">
-                        <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/admin" target="_blank" style="display: inline-block; color: #FFFFFF; font-size: 15px; font-weight: 600; text-decoration: none; padding: 12px 32px;">Sign in to RITR Admin</a>
+                        <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/admin" target="_blank" style="display: inline-block; color: #FFFFFF; font-size: 15px; font-weight: 600; text-decoration: none; padding: 12px 32px;">Accept Invite</a>
                       </td>
                     </tr>
                   </table>
-                  <p style="color: #9A8585; font-size: 12px; line-height: 18px; margin: 0;">If you did not request this email, you can safely ignore it. Nobody can sign in without clicking the link.</p>
+                  <p style="color: #9A8585; font-size: 12px; line-height: 18px; margin: 0;">This link expires in 24 hours. If you were not expecting this invitation, you can safely ignore this email.</p>
                 </td>
               </tr>
             </table>
