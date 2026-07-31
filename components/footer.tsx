@@ -76,7 +76,13 @@ export function Footer() {
       </div>
       <div className="max-w-5xl mx-auto mt-6 pt-4 border-t border-white/10 flex justify-between text-[11px] text-white/40">
         <span>&copy; 2026 Rack in the Rockies</span>
-        <span>Denver, Colorado</span>
+        <span>
+          Denver, Colorado
+          <span className="mx-2">&middot;</span>
+          <Link href="/admin" className="hover:text-coral transition-colors">
+            Admin
+          </Link>
+        </span>
       </div>
     </footer>
   );
