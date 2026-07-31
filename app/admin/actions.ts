@@ -17,6 +17,28 @@ export async function adminResubscribe(formData: FormData) {
   revalidatePath("/admin");
 }
 
+export async function adminAddTag(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const tag = String(formData.get("tag") ?? "");
+  if (id && tag.trim()) {
+    const { addTagById } = await import("@/lib/subscribers");
+    await addTagById(id, tag);
+  }
+  revalidatePath("/admin");
+}
+
+export async function adminRemoveTag(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const tag = String(formData.get("tag") ?? "");
+  if (id && tag) {
+    const { removeTagById } = await import("@/lib/subscribers");
+    await removeTagById(id, tag);
+  }
+  revalidatePath("/admin");
+}
+
 export async function signOut() {
   const supabase = await supabaseServer();
   await supabase.auth.signOut();
