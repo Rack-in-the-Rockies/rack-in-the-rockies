@@ -13,9 +13,22 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-screen bg-warm-white">
       <header className="border-b border-coral/10 px-6 py-3 flex items-center justify-between">
-        <Link href="/admin" className="font-display font-bold text-text-dark">
-          RITR Admin
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/admin" className="font-display font-bold text-text-dark">
+            RITR Admin
+          </Link>
+          <nav className="flex gap-3 text-sm text-text-mid">
+            <Link href="/admin" className="hover:text-text-dark">
+              Subscribers
+            </Link>
+            <Link href="/admin/compose" className="hover:text-text-dark">
+              Compose
+            </Link>
+            <Link href="/admin/sends" className="hover:text-text-dark">
+              Sends
+            </Link>
+          </nav>
+        </div>
         <form action={signOut}>
           <button type="submit" className="text-xs text-text-mid underline hover:no-underline">
             Sign out
