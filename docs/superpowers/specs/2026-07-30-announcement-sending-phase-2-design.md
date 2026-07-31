@@ -70,6 +70,11 @@ distinct emails per entry, so this costs nothing extra.
 `send-<sendId>-chunk-<n>`, stable across retries. A retried or resumed chunk
 whose original call actually succeeded is deduplicated by Resend (keys live 24
 hours), so retry and resume are safe against double delivery within a send.
+For a reused key to be valid its payload must be identical to the original
+call, so chunk membership is assigned once, at snapshot time, and stored on
+each recipient row (`chunk_index`). Resume regroups by stored chunk, never by
+re-chunking whatever happens to be left, which keeps every reused key paired
+with its original payload.
 Double-clicking Send twice would create two distinct send rows and is prevented
 in the UI by an explicit confirmation step and a disabled in-flight button, not
 by idempotency keys. Accepted residual risk at this scale.
@@ -125,11 +130,8 @@ One row per real send. Test sends do not create rows.
 | `audience` | `jsonb` not null | filter snapshot, e.g. `{"tags": ["booking"]}` or `{"tags": []}` for all subscribed |
 | `status` | `text` not null | `sending`, `sent`, `partial`, `failed` |
 | `total_count` | `integer` not null | recipients snapshotted at send time |
-| `sent_count` | `integer` not null default 0 | accepted by Resend |
-| `failed_count` | `integer` not null default 0 | gave up after retries |
-| `delivered_count` | `integer` not null default 0 | maintained by webhook |
-| `bounced_count` | `integer` not null default 0 | maintained by webhook |
-| `complained_count` | `integer` not null default 0 | maintained by webhook |
+| `sent_count` | `integer` not null default 0 | accepted by Resend, written by the pipeline |
+| `failed_count` | `integer` not null default 0 | gave up after retries, written by the pipeline |
 | `created_by` | `uuid` not null | FK to `public.profiles(id)` |
 | `created_at` | `timestamptz` not null | default `now()` |
 | `completed_at` | `timestamptz` | null while `sending` |
@@ -137,6 +139,12 @@ One row per real send. Test sends do not create rows.
 `status` meanings: `sending` is in progress (or died mid-flight; see resume),
 `sent` means every recipient was accepted by Resend, `partial` means some
 recipients failed after retries, `failed` means none succeeded.
+
+Only the pipeline, a single writer, updates `sent_count` and `failed_count`.
+Delivered, bounced, and complained counts are NOT stored on `sends`: webhooks
+arrive concurrently, and read-modify-write counters would lose updates. Those
+counts are computed from `send_recipients` statuses at read time, where they
+are always consistent with the rows beneath them.
 
 ### `public.send_recipients`
 
@@ -148,6 +156,7 @@ One row per recipient per send, snapshotted when Send is pressed.
 | `send_id` | `uuid` not null | FK to `public.sends(id)` on delete cascade |
 | `subscriber_id` | `uuid` not null | FK to `public.subscribers(id)` on delete cascade |
 | `email` | `text` not null | snapshot at send time |
+| `chunk_index` | `integer` not null | batch chunk assigned at snapshot time; see Idempotency |
 | `resend_email_id` | `text` | Resend's id, set when the batch call returns |
 | `status` | `text` not null default `pending` | `pending`, `sent`, `failed`, `delivered`, `bounced`, `complained` |
 | `error` | `text` | last failure detail, server-side only |
@@ -178,7 +187,7 @@ snapshot audience ──▶ send_recipients rows ──▶ chunks of 100
                                                    │ email ids
                                                    ▼
 Resend ──▶ POST /api/webhooks/resend ──▶ send_recipients outcome
-                    │                        + sends counts
+                    │              (counts derived at read time)
                     ▼
         lib/subscribers.ts status write-back (bounced / complained)
 
