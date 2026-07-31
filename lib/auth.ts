@@ -9,7 +9,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
  *
  * Role comes from public.profiles, never from user_metadata (self-editable).
  */
-export async function requireAdmin(): Promise<{ userId: string }> {
+export async function requireAdmin(): Promise<{ userId: string; email: string }> {
   const supabase = await supabaseServer();
   const { data, error } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub;
@@ -22,5 +22,5 @@ export async function requireAdmin(): Promise<{ userId: string }> {
     .maybeSingle();
   if (profile?.role !== "admin") redirect("/admin/login");
 
-  return { userId };
+  return { userId, email: String(data?.claims?.email ?? "") };
 }
