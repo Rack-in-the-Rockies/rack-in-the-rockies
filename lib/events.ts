@@ -64,7 +64,7 @@ export async function getFeaturedEvent(): Promise<EventWithSessions | null> {
   }
 }
 
-export type EventListItem = EventRow & { session_count: number };
+export type EventListItem = EventRow & { session_count: number; ended: boolean };
 
 export async function listEvents(): Promise<EventListItem[]> {
   const { data, error } = await supabaseAdmin()
@@ -73,10 +73,12 @@ export async function listEvents(): Promise<EventListItem[]> {
     .order("created_at", { ascending: false })
     .limit(200);
   if (error) throw error;
+  const now = Date.now();
   return (data as unknown as (EventRow & { event_sessions: { count: number }[] })[]).map(
     ({ event_sessions, ...event }) => ({
       ...event,
       session_count: event_sessions?.[0]?.count ?? 0,
+      ended: event.ends_at !== null && new Date(event.ends_at).getTime() <= now,
     })
   );
 }
