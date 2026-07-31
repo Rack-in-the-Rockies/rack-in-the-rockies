@@ -3,20 +3,26 @@ import { EventCard } from "@/components/event-card";
 import { SectionHeader } from "@/components/section-header";
 import { BookingForm } from "@/components/booking-form";
 import { FeaturedEventHero } from "@/components/featured-event-hero";
+import { getFeaturedEvent } from "@/lib/events";
 
-export const metadata = {
-  title: "Events | Rack in the Rockies",
-  description:
-    "Mahjong in Bloom: July 28, 2026 at Tee Lee Floral in Olde Town Arvada. Plus private mahjong parties, lessons, and charity events in Denver, Colorado.",
-};
+export async function generateMetadata() {
+  const featured = await getFeaturedEvent();
+  return {
+    title: "Events | Rack in the Rockies",
+    description: featured
+      ? `${featured.title}: ${featured.date_label} at ${featured.location}. Plus private mahjong parties, lessons, and charity events in Denver, Colorado.`
+      : "Private mahjong parties, lessons, and charity events in Denver, Colorado.",
+  };
+}
 
 // Re-render hourly so the featured event disappears on its own once it's over.
 export const revalidate = 3600;
 
-export default function EventsPage() {
+export default async function EventsPage() {
+  const featured = await getFeaturedEvent();
   return (
     <main>
-      <FeaturedEventHero />
+      {featured && <FeaturedEventHero event={featured} />}
 
       {/* Gradient Divider */}
       <div className="h-[3px] bg-gradient-to-r from-coral via-tangerine to-golden opacity-30" />

@@ -1,11 +1,10 @@
-import { featuredEvent, isFeaturedEventOver } from "@/data/featured-event";
 import { EventHeroDecor } from "@/components/event-hero-decor";
+import { splitTitleAccent } from "@/lib/event-rules";
+import type { EventWithSessions } from "@/lib/events";
 
-export function FeaturedEventHero() {
-  if (isFeaturedEventOver()) return null;
-
-  const { partner, dateLabel, location, blurb, sessions, signupUrl } =
-    featuredEvent;
+export function FeaturedEventHero({ event }: { event: EventWithSessions }) {
+  const { title, partner, date_label, location, blurb, sessions, external_signup_url } = event;
+  const { lead, accent } = splitTitleAccent(title);
 
   return (
     <section className="relative overflow-hidden bg-cream px-6 py-14 md:px-12 md:py-16">
@@ -23,15 +22,19 @@ export function FeaturedEventHero() {
         </span>
 
         <h1 className="font-display text-4xl font-bold leading-[1.1] text-text-dark md:text-[52px]">
-          Mahjong in{" "}
-          <em className="bg-gradient-to-r from-coral to-tangerine bg-clip-text italic text-transparent">
-            Bloom
-          </em>
+          {lead}
+          {accent && (
+            <em className="bg-gradient-to-r from-coral to-tangerine bg-clip-text italic text-transparent">
+              {accent}
+            </em>
+          )}
         </h1>
 
-        <p className="mt-3 text-sm font-semibold uppercase tracking-[2px] text-text-mid">
-          A Rack in the Rockies event at {partner}
-        </p>
+        {partner && (
+          <p className="mt-3 text-sm font-semibold uppercase tracking-[2px] text-text-mid">
+            A Rack in the Rockies event at {partner}
+          </p>
+        )}
 
         <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-mid">
           {blurb}
@@ -41,7 +44,7 @@ export function FeaturedEventHero() {
         <div className="mt-7 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm font-semibold text-text-dark">
           <span className="flex items-center gap-2">
             <span aria-hidden="true">🀄</span>
-            {dateLabel}
+            {date_label}
           </span>
           <span className="text-coral/40" aria-hidden="true">
             |
@@ -50,37 +53,39 @@ export function FeaturedEventHero() {
         </div>
 
         {/* Sessions */}
-        <div className="mx-auto mt-7 grid max-w-xl grid-cols-1 gap-4 sm:grid-cols-2">
-          {sessions.map((session) => (
-            <div
-              key={session.name}
-              className="rounded-2xl border border-coral/[0.12] bg-white p-5 text-center shadow-sm"
-            >
-              <h2 className="font-display text-lg text-text-dark">
-                {session.name}
-              </h2>
-              <p className="mt-1.5 text-sm text-text-mid">{session.time}</p>
-              <p className="mt-2 bg-gradient-to-r from-coral to-tangerine bg-clip-text text-2xl font-bold text-transparent">
-                {session.price}
-              </p>
-            </div>
-          ))}
-        </div>
+        {sessions.length > 0 && (
+          <div className="mx-auto mt-7 grid max-w-xl grid-cols-1 gap-4 sm:grid-cols-2">
+            {sessions.map((session) => (
+              <div
+                key={session.id}
+                className="rounded-2xl border border-coral/[0.12] bg-white p-5 text-center shadow-sm"
+              >
+                <h2 className="font-display text-lg text-text-dark">{session.name}</h2>
+                <p className="mt-1.5 text-sm text-text-mid">{session.time_label}</p>
+                <p className="mt-2 bg-gradient-to-r from-coral to-tangerine bg-clip-text text-2xl font-bold text-transparent">
+                  {session.price_label}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* CTA */}
-        <div className="mt-8">
-          <a
-            href={signupUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block rounded-pill bg-gradient-to-r from-coral to-tangerine px-8 py-3.5 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-coral/30"
-          >
-            Reserve Your Seat
-          </a>
-          <p className="mt-3 text-xs text-text-light">
-            Seats are limited. Registration opens in a new tab.
-          </p>
-        </div>
+        {external_signup_url && (
+          <div className="mt-8">
+            <a
+              href={external_signup_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block rounded-pill bg-gradient-to-r from-coral to-tangerine px-8 py-3.5 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-coral/30"
+            >
+              Reserve Your Seat
+            </a>
+            <p className="mt-3 text-xs text-text-light">
+              Seats are limited. Registration opens in a new tab.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

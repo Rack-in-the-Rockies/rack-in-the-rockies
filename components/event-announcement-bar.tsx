@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { featuredEvent, isFeaturedEventOver } from "@/data/featured-event";
+import type { EventWithSessions } from "@/lib/events";
 
-export function EventAnnouncementBar() {
-  if (isFeaturedEventOver()) return null;
-
+export function EventAnnouncementBar({ event }: { event: EventWithSessions }) {
   return (
     <Link
       href="/events"
@@ -13,7 +11,7 @@ export function EventAnnouncementBar() {
         <span className="mr-2" aria-hidden="true">
           🀄
         </span>
-        {featuredEvent.bannerText}
+        {event.banner_text}
         <span className="ml-2 inline-block underline underline-offset-4 transition-transform group-hover:translate-x-0.5">
           Reserve your seat →
         </span>

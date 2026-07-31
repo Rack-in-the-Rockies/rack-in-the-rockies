@@ -4,6 +4,7 @@ import "./globals.css";
 import { Nav } from "@/components/nav";
 import { Footer } from "@/components/footer";
 import { EventAnnouncementBar } from "@/components/event-announcement-bar";
+import { getFeaturedEvent } from "@/lib/events";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -48,15 +49,16 @@ export const metadata: Metadata = {
 // Re-render hourly so the event announcement bar disappears on its own once it's over.
 export const revalidate = 3600;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const featuredEvent = await getFeaturedEvent();
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable}`}>
       <body className="font-body bg-warm-white text-text-dark antialiased">
-        <EventAnnouncementBar />
+        {featuredEvent && <EventAnnouncementBar event={featuredEvent} />}
         <Nav />
         {children}
         <Footer />
