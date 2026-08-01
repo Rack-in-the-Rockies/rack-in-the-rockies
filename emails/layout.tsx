@@ -28,7 +28,12 @@ export function EmailShell({
   children,
 }: {
   preheader?: string;
-  unsubscribeUrl: string;
+  /**
+   * Marketing sends pass the recipient's unsubscribe URL and get the full
+   * CAN-SPAM footer. Transactional receipts omit it and get a minimal
+   * business-name footer instead.
+   */
+  unsubscribeUrl?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -67,19 +72,31 @@ export function EmailShell({
             <Section style={{ padding: "28px 32px" }}>{children}</Section>
           </Section>
           <Section style={{ padding: "20px 12px 0", textAlign: "center" as const }}>
-            <Text style={footerText}>
-              You are receiving this because you signed up for event announcements
-              from {BUSINESS_NAME}.
-            </Text>
-            <Text style={footerText}>
-              <Link href={unsubscribeUrl} style={{ color: t.textMid, textDecoration: "underline" }}>
-                Unsubscribe
-              </Link>
-            </Text>
-            <Text style={footerText}>
-              {BUSINESS_NAME} &middot; {BUSINESS_MAILING_ADDRESS ?? "[Mailing address not set]"}{" "}
-              &middot; {BUSINESS_EMAIL}
-            </Text>
+            {unsubscribeUrl ? (
+              <>
+                <Text style={footerText}>
+                  You are receiving this because you signed up for event announcements
+                  from {BUSINESS_NAME}.
+                </Text>
+                <Text style={footerText}>
+                  <Link
+                    href={unsubscribeUrl}
+                    style={{ color: t.textMid, textDecoration: "underline" }}
+                  >
+                    Unsubscribe
+                  </Link>
+                </Text>
+                <Text style={footerText}>
+                  {BUSINESS_NAME} &middot;{" "}
+                  {BUSINESS_MAILING_ADDRESS ?? "[Mailing address not set]"} &middot;{" "}
+                  {BUSINESS_EMAIL}
+                </Text>
+              </>
+            ) : (
+              <Text style={footerText}>
+                {BUSINESS_NAME} &middot; {BUSINESS_EMAIL}
+              </Text>
+            )}
           </Section>
         </Container>
       </Body>
