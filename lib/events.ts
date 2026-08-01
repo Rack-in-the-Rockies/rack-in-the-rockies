@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { type EventInput, type EventStatus } from "@/lib/event-rules";
+import { type EventDecor, type EventInput, type EventStatus } from "@/lib/event-rules";
 
 export type EventRow = {
   id: string;
@@ -14,6 +14,7 @@ export type EventRow = {
   payment_instructions: string | null;
   image_url: string | null;
   image_alt: string | null;
+  decor: EventDecor;
   status: EventStatus;
   created_by: string;
   created_at: string;
@@ -108,6 +109,7 @@ function toRowPatch(input: EventInput) {
     payment_instructions: input.paymentInstructions,
     image_url: input.imageUrl,
     image_alt: input.imageAlt,
+    decor: input.decor,
   };
 }
 
@@ -217,6 +219,7 @@ export function toEventInput(e: EventWithSessions): EventInput {
     paymentInstructions: e.payment_instructions,
     imageUrl: e.image_url,
     imageAlt: e.image_alt,
+    decor: e.decor,
     sessions: e.sessions.map((s) => ({
       id: s.id,
       name: s.name,

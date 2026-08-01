@@ -42,9 +42,10 @@ export function EventHeroDefaultDecor() {
     <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
       <MountainRange className="absolute -bottom-1 left-0 w-[55%] max-w-md" />
       <MountainRange className="absolute -bottom-1 right-0 w-[45%] max-w-sm" flip />
-      <Tile className="absolute left-[6%] top-[14%] w-9 opacity-70 md:w-11" rotate={-12} />
-      <Tile className="absolute right-[8%] top-[22%] w-8 opacity-60 md:w-10" rotate={10} />
-      <Tile className="absolute right-[16%] bottom-[30%] hidden w-9 opacity-50 md:block" rotate={-6} />
+      <Tile className="absolute left-[5%] top-[12%] w-12 opacity-90 drop-shadow-md md:w-16" rotate={-12} />
+      <Tile className="absolute right-[6%] top-[18%] w-11 opacity-85 drop-shadow-md md:w-14" rotate={10} />
+      <Tile className="absolute left-[12%] bottom-[24%] w-10 opacity-75 drop-shadow-md md:w-12" rotate={7} />
+      <Tile className="absolute right-[14%] bottom-[28%] w-11 opacity-80 drop-shadow-md md:w-14" rotate={-6} />
     </div>
   );
 }

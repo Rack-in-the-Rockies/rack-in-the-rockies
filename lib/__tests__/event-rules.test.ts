@@ -53,6 +53,7 @@ const complete: EventInput = {
   paymentInstructions: null,
   imageUrl: null,
   imageAlt: null,
+  decor: "mountains",
   sessions: [{ id: null, name: "Intro", timeLabel: "4:45 - 8:00 PM", priceLabel: "$60", capacity: 24 }],
 };
 
@@ -159,5 +160,13 @@ describe("duplicateTransform", () => {
     });
     expect(dup.sessions[0].id).toBeNull();
     expect(dup.imageUrl).toBe("https://x/img.jpg");
+  });
+});
+
+describe("decor", () => {
+  it("parses blooms and defaults everything else to mountains", () => {
+    expect(parseEventInput({ ...complete, decor: "blooms" })!.decor).toBe("blooms");
+    expect(parseEventInput({ ...complete, decor: "confetti" })!.decor).toBe("mountains");
+    expect(parseEventInput({ ...complete, decor: undefined })!.decor).toBe("mountains");
   });
 });

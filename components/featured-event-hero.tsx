@@ -1,4 +1,5 @@
 import { EventHeroDefaultDecor } from "@/components/event-hero-default-decor";
+import { EventHeroBloomDecor } from "@/components/event-hero-bloom-decor";
 import { splitTitleAccent } from "@/lib/event-rules";
 import type { EventWithSessions } from "@/lib/events";
 
@@ -23,6 +24,8 @@ export function FeaturedEventHero({ event }: { event: EventWithSessions }) {
             className="absolute -right-6 top-1/2 hidden w-72 -translate-y-1/2 rotate-3 rounded-2xl border-4 border-white object-cover shadow-xl lg:block xl:w-80"
           />
         </div>
+      ) : event.decor === "blooms" ? (
+        <EventHeroBloomDecor />
       ) : (
         <EventHeroDefaultDecor />
       )}
