@@ -51,7 +51,9 @@ const complete: EventInput = {
   bannerText: "Mahjong in Bloom: July 28 at Tee Lee Floral",
   externalSignupUrl: "https://forms.example.com/x",
   paymentInstructions: null,
-  sessions: [{ name: "Intro", timeLabel: "4:45 - 8:00 PM", priceLabel: "$60", capacity: 24 }],
+  imageUrl: null,
+  imageAlt: null,
+  sessions: [{ id: null, name: "Intro", timeLabel: "4:45 - 8:00 PM", priceLabel: "$60", capacity: 24 }],
 };
 
 describe("parseEventInput", () => {
@@ -148,5 +150,14 @@ describe("duplicateTransform", () => {
     expect(dup.endsAt).toBe("");
     expect(dup.bannerText).toBe("");
     expect(dup.sessions).toEqual(complete.sessions);
+  });
+  it("clears session ids and keeps the image", () => {
+    const dup = duplicateTransform({
+      ...complete,
+      imageUrl: "https://x/img.jpg",
+      sessions: [{ ...complete.sessions[0], id: "sess-1" }],
+    });
+    expect(dup.sessions[0].id).toBeNull();
+    expect(dup.imageUrl).toBe("https://x/img.jpg");
   });
 });

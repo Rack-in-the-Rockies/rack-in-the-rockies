@@ -15,6 +15,8 @@ import {
   getEvent,
   toEventInput,
 } from "@/lib/events";
+import { validateImageUpload } from "@/lib/registration-rules";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export type EventActionResult = { id: string } | { errors: string[] } | { error: string };
 
@@ -40,10 +42,15 @@ export async function saveEventAction(
   const errors = validateEventInput(input, { forPublish: isLive });
   if (errors.length) return { errors };
 
-  const id = existing ? existing.id : await createEvent(input, userId);
-  if (existing) await updateEvent(id, input);
-  if (isLive) revalidatePath("/", "layout");
-  return { id };
+  try {
+    const id = existing ? existing.id : await createEvent(input, userId);
+    if (existing) await updateEvent(id, input);
+    if (isLive) revalidatePath("/", "layout");
+    return { id };
+  } catch (error) {
+    console.error("saveEventAction failed", error);
+    return { error: error instanceof Error ? error.message : "Something went wrong." };
+  }
 }
 
 export async function publishEventAction(
@@ -59,10 +66,15 @@ export async function publishEventAction(
   const errors = validateEventInput(input, { forPublish: true });
   if (errors.length) return { errors };
 
-  await updateEvent(eventId, input);
-  await setEventStatus(eventId, "published");
-  revalidatePath("/", "layout");
-  return { id: eventId };
+  try {
+    await updateEvent(eventId, input);
+    await setEventStatus(eventId, "published");
+    revalidatePath("/", "layout");
+    return { id: eventId };
+  } catch (error) {
+    console.error("publishEventAction failed", error);
+    return { error: error instanceof Error ? error.message : "Something went wrong." };
+  }
 }
 
 export async function unpublishEventAction(eventId: string): Promise<EventActionResult> {
@@ -82,6 +94,38 @@ export async function duplicateEventAction(eventId: string): Promise<EventAction
 
 export async function deleteDraftAction(eventId: string): Promise<EventActionResult> {
   await requireAdmin();
-  await deleteDraftEvent(eventId);
-  return { id: eventId };
+  try {
+    await deleteDraftEvent(eventId);
+    return { id: eventId };
+  } catch (error) {
+    console.error("deleteDraftAction failed", error);
+    return { error: error instanceof Error ? error.message : "Something went wrong." };
+  }
+}
+
+const EXTENSIONS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+export async function uploadEventImageAction(
+  formData: FormData
+): Promise<{ url: string } | { error: string }> {
+  await requireAdmin();
+  const file = formData.get("file");
+  if (!(file instanceof File)) return { error: "Choose an image file first." };
+  const invalid = validateImageUpload({ type: file.type, size: file.size });
+  if (invalid) return { error: invalid };
+
+  const path = `${crypto.randomUUID()}.${EXTENSIONS[file.type]}`;
+  const storage = supabaseAdmin().storage.from("event-images");
+  const { error } = await storage.upload(path, await file.arrayBuffer(), {
+    contentType: file.type,
+  });
+  if (error) {
+    console.error("event image upload failed", error);
+    return { error: "The upload failed. Try again." };
+  }
+  return { url: storage.getPublicUrl(path).data.publicUrl };
 }

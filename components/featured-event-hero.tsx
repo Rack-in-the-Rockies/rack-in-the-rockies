@@ -1,4 +1,4 @@
-import { EventHeroDecor } from "@/components/event-hero-decor";
+import { EventHeroDefaultDecor } from "@/components/event-hero-default-decor";
 import { splitTitleAccent } from "@/lib/event-rules";
 import type { EventWithSessions } from "@/lib/events";
 
@@ -14,7 +14,18 @@ export function FeaturedEventHero({ event }: { event: EventWithSessions }) {
         <div className="absolute -bottom-[15%] -left-[8%] h-full w-1/2 bg-[radial-gradient(ellipse,rgba(255,107,107,0.14)_0%,transparent_70%)]" />
       </div>
 
-      <EventHeroDecor />
+      {event.image_url ? (
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={event.image_url}
+            alt={event.image_alt ?? event.title}
+            className="absolute -right-6 top-1/2 hidden w-72 -translate-y-1/2 rotate-3 rounded-2xl border-4 border-white object-cover shadow-xl lg:block xl:w-80"
+          />
+        </div>
+      ) : (
+        <EventHeroDefaultDecor />
+      )}
 
       <div className="relative z-10 mx-auto max-w-3xl text-center">
         <span className="mb-4 inline-block rounded-full bg-tangerine/10 px-3.5 py-1 text-[11px] font-semibold uppercase tracking-[3px] text-tangerine">

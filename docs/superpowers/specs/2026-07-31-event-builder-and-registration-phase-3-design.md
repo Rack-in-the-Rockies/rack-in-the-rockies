@@ -24,10 +24,15 @@ registrations in-house with capacity limits and branded confirmation emails.
   with live preview, duplicate-from-past, draft/publish. The public site and
   the composer prefill read the featured event from the database.
   `data/featured-event.ts` is deleted.
-- **Part B, registration.** A featured event without an external signup URL
-  takes registrations on `/events`: session picker with capacity, guest count,
-  confirmation email with payment instructions and a cancel link, admin
-  registrant view with CSV export, and a subscriber side effect.
+- **Part B, registration and hero art.** A featured event without an external
+  signup URL takes registrations on `/events`: session picker with capacity,
+  guest count, confirmation email with payment instructions and a cancel link,
+  admin registrant view with CSV export, and a subscriber side effect. Part B
+  also carries two Part A follow-ups from Tyler's live review: the hero art
+  system (a default brand SVG of mountains and tiles replacing the
+  Bloom-specific flowers, with an optional per-event image upload that
+  replaces the decor), and a date picker on the editor's date field that
+  auto-writes the human label.
 
 Part B depends on Part A. Each part gets its own implementation plan; Part A
 ships working on its own.
@@ -46,6 +51,11 @@ ships working on its own.
   registrant list with per-session counts and CSV export in the admin,
   side-effect subscribe with an event tag
 - Sessions live in their own table so registrations can reference them
+- Hero art (Part B): a default mountains-and-tiles SVG in the brand palette
+  when an event has no image; an admin-uploaded image (Supabase Storage,
+  first use in the project) replaces the decor when present
+- Editor polish (Part B): the date field gains a picker that fills the
+  human-readable label, which stays editable for ranges and phrasing
 
 ## Non-goals
 
@@ -103,6 +113,19 @@ because the cost of an accidental unsubscribe is low and recoverable. An
 accidentally cancelled registration frees a seat someone wanted, so the cancel
 link lands on a page showing the registration with an explicit "Cancel my
 registration" button that POSTs. The asymmetry is intentional.
+
+**Hero art decisions (Tyler, from live review of Part A).** The flower decor
+was drawn for Mahjong in Bloom and wrongly decorates every event. Default art
+becomes a hand-drawn SVG of mountain silhouettes and floating mahjong tiles
+in the site palette, ornamental and screen-reader-hidden like the flowers
+were; the flower component is deleted as dead code. An uploaded event image
+REPLACES the decor entirely (one visual slot, hard to make ugly) rather than
+adding a photo block beside it. Uploads land in a public-read Supabase
+Storage bucket (`event-images`), written server-side through the secret key
+so the bucket needs no client write policies; jpeg/png/webp up to 5 MB,
+randomized filenames. Replaced images are not garbage-collected; accepted at
+this scale. `events` gains nullable `image_url` and `image_alt` columns; alt
+falls back to the event title when blank.
 
 **Registration email is transactional.** The confirmation is a receipt, not
 marketing: it reuses the branded email shell but with a footer of business
@@ -172,7 +195,8 @@ Indexes on `session_id`, `event_id`, `email`. Seats taken for a session =
 sum of `seats` over its `confirmed` registrations.
 
 Part B also alters the `subscribers.source` check constraint to add
-`event-registration`.
+`event-registration`, adds nullable `image_url` and `image_alt` columns to
+`public.events`, and creates the public-read `event-images` Storage bucket.
 
 ### Featured event derivation
 
@@ -274,6 +298,26 @@ least one session:
   sets status `cancelled`, freeing the seats. Unknown token or already
   cancelled renders a neutral page. Noindex, like the unsubscribe pages.
 
+### Part B: hero art and editor polish
+
+- `components/event-hero-decor.tsx` (flowers) is deleted. A new
+  `components/event-hero-default-decor.tsx` renders the mountains-and-tiles
+  SVG with the same ornamental contract (absolute positioning,
+  `aria-hidden`, non-interactive, palette colors only).
+- `FeaturedEventHero`: when `event.image_url` is present, render the image
+  (soft-framed, palette-tinted treatment consistent with the current art
+  direction) in place of the decor; otherwise render the default decor. Alt
+  text is `image_alt` or the event title.
+- Editor: an image field with upload (file input posting to a server action
+  behind `requireAdmin` that validates type and size, uploads to the
+  `event-images` bucket, and returns the public URL into form state), a
+  thumbnail of the current image, and a remove button. Plus an alt text
+  field shown only when an image is set.
+- Editor date field: a date picker input beside the label field; picking a
+  date writes the formatted label ("July 28, 2026") into the label field,
+  which stays editable afterward. The label remains the stored value;
+  nothing else changes about `date_label`.
+
 ### Part B: admin registrants
 
 On `/admin/events/[id]` for events with in-house registration: per-session
@@ -318,6 +362,9 @@ behind mocks, admin actions verified to call `requireAdmin`.
 - Admin actions: every mutation rejects without an admin session.
 - Confirmation email render: contains event details, payment instructions
   when present, cancel URL, and no em or en dashes.
+- Upload action: rejects wrong content types and oversize files with
+  plain-language errors; rejects without an admin session; date label
+  formatting helper produces "July 28, 2026" from a date value.
 
 ## Environment variables
 

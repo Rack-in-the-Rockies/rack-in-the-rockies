@@ -1,5 +1,10 @@
 export type SubscriberStatus = "subscribed" | "unsubscribed" | "bounced" | "complained";
-export type SubscribeSource = "newsletter" | "contact" | "booking" | "trips-waitlist";
+export type SubscribeSource =
+  | "newsletter"
+  | "contact"
+  | "booking"
+  | "trips-waitlist"
+  | "event-registration";
 export type SubscribeAction = "create" | "update" | "resubscribe" | "blocked";
 
 export function normalizeEmail(raw: string): string {

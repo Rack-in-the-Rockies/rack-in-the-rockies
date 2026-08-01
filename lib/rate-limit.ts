@@ -23,3 +23,6 @@ export function createRateLimiter({ limit, windowMs }: { limit: number; windowMs
 
 /** Shared limiter for /api/subscribe: 5 attempts per 10 minutes per IP. */
 export const subscribeLimiter = createRateLimiter({ limit: 5, windowMs: 600_000 });
+
+/** Shared limiter for /api/register: 10 attempts per 10 minutes per IP. */
+export const registerLimiter = createRateLimiter({ limit: 10, windowMs: 600_000 });
