@@ -12,6 +12,8 @@ export type EventRow = {
   banner_text: string;
   external_signup_url: string | null;
   payment_instructions: string | null;
+  image_url: string | null;
+  image_alt: string | null;
   status: EventStatus;
   created_by: string;
   created_at: string;
@@ -104,28 +106,62 @@ function toRowPatch(input: EventInput) {
     banner_text: input.bannerText.trim(),
     external_signup_url: input.externalSignupUrl,
     payment_instructions: input.paymentInstructions,
+    image_url: input.imageUrl,
+    image_alt: input.imageAlt,
   };
 }
 
-async function replaceSessions(eventId: string, sessions: EventInput["sessions"]) {
-  // Part A only: sessions carry no references yet, so replace-on-save is
-  // safe. Part B must change this to preserve session ids (registrations
-  // will reference them).
+export class SessionInUseError extends Error {
+  constructor() {
+    super("A session with registrations cannot be removed. Cancel its registrations first.");
+  }
+}
+
+/**
+ * Id-preserving session sync: registrations reference session rows, so
+ * update-in-place by id, insert new rows, and delete removed rows only when
+ * nothing references them.
+ */
+async function syncSessions(eventId: string, sessions: EventInput["sessions"]) {
   const client = supabaseAdmin();
-  const { error: delError } = await client.from("event_sessions").delete().eq("event_id", eventId);
-  if (delError) throw delError;
-  if (sessions.length === 0) return;
-  const { error } = await client.from("event_sessions").insert(
-    sessions.map((s, i) => ({
+  const { data: existingRows, error: listError } = await client
+    .from("event_sessions")
+    .select("id")
+    .eq("event_id", eventId);
+  if (listError) throw listError;
+  const keptIds = new Set(sessions.map((s) => s.id).filter(Boolean));
+  const removedIds = (existingRows as { id: string }[])
+    .map((r) => r.id)
+    .filter((id) => !keptIds.has(id));
+
+  if (removedIds.length > 0) {
+    const { count, error: regError } = await client
+      .from("event_registrations")
+      .select("id", { count: "exact", head: true })
+      .in("session_id", removedIds);
+    if (regError) throw regError;
+    if ((count ?? 0) > 0) throw new SessionInUseError();
+    const { error: delError } = await client.from("event_sessions").delete().in("id", removedIds);
+    if (delError) throw delError;
+  }
+
+  for (const [i, s] of sessions.entries()) {
+    const row = {
       event_id: eventId,
       name: s.name.trim(),
       time_label: s.timeLabel.trim(),
       price_label: s.priceLabel.trim(),
       capacity: s.capacity,
       sort_order: i,
-    }))
-  );
-  if (error) throw error;
+    };
+    if (s.id) {
+      const { error } = await client.from("event_sessions").update(row).eq("id", s.id);
+      if (error) throw error;
+    } else {
+      const { error } = await client.from("event_sessions").insert(row);
+      if (error) throw error;
+    }
+  }
 }
 
 export async function createEvent(input: EventInput, createdBy: string): Promise<string> {
@@ -136,14 +172,14 @@ export async function createEvent(input: EventInput, createdBy: string): Promise
     .single();
   if (error) throw error;
   const id = (data as { id: string }).id;
-  await replaceSessions(id, input.sessions);
+  await syncSessions(id, input.sessions);
   return id;
 }
 
 export async function updateEvent(id: string, input: EventInput): Promise<void> {
   const { error } = await supabaseAdmin().from("events").update(toRowPatch(input)).eq("id", id);
   if (error) throw error;
-  await replaceSessions(id, input.sessions);
+  await syncSessions(id, input.sessions);
 }
 
 export async function setEventStatus(id: string, status: EventStatus): Promise<void> {
@@ -152,11 +188,18 @@ export async function setEventStatus(id: string, status: EventStatus): Promise<v
 }
 
 export async function deleteDraftEvent(id: string): Promise<void> {
-  const { error } = await supabaseAdmin()
-    .from("events")
-    .delete()
-    .eq("id", id)
-    .eq("status", "draft");
+  const client = supabaseAdmin();
+  // An unpublished-then-deleted event must not cascade away its
+  // registration history.
+  const { count, error: regError } = await client
+    .from("event_registrations")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", id);
+  if (regError) throw regError;
+  if ((count ?? 0) > 0) {
+    throw new Error("This event has registrations and cannot be deleted.");
+  }
+  const { error } = await client.from("events").delete().eq("id", id).eq("status", "draft");
   if (error) throw error;
 }
 
@@ -172,7 +215,10 @@ export function toEventInput(e: EventWithSessions): EventInput {
     bannerText: e.banner_text,
     externalSignupUrl: e.external_signup_url,
     paymentInstructions: e.payment_instructions,
+    imageUrl: e.image_url,
+    imageAlt: e.image_alt,
     sessions: e.sessions.map((s) => ({
+      id: s.id,
       name: s.name,
       timeLabel: s.time_label,
       priceLabel: s.price_label,

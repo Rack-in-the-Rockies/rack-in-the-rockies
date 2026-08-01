@@ -28,6 +28,8 @@ const EMPTY: EventInput = {
   bannerText: "",
   externalSignupUrl: null,
   paymentInstructions: null,
+  imageUrl: null,
+  imageAlt: null,
   sessions: [],
 };
 
@@ -105,12 +107,14 @@ export function EventEditor({
     banner_text: form.bannerText,
     external_signup_url: form.externalSignupUrl,
     payment_instructions: form.paymentInstructions,
+    image_url: form.imageUrl,
+    image_alt: form.imageAlt,
     status,
     created_by: "",
     created_at: "",
     updated_at: "",
     sessions: form.sessions.map((s, i) => ({
-      id: `preview-${i}`,
+      id: s.id ?? `preview-${i}`,
       event_id: "preview",
       name: s.name,
       time_label: s.timeLabel,
@@ -250,7 +254,7 @@ export function EventEditor({
               set({
                 sessions: [
                   ...form.sessions,
-                  { name: "", timeLabel: "", priceLabel: "", capacity: null },
+                  { id: null, name: "", timeLabel: "", priceLabel: "", capacity: null },
                 ],
               })
             }
