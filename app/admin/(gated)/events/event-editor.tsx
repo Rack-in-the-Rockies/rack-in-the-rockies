@@ -199,7 +199,7 @@ export function EventEditor({
         <div>
           <label className={labelCls}>Sessions</label>
           {form.sessions.map((s, i) => (
-            <div key={i} className="flex gap-2 mb-2">
+            <div key={i} className="flex flex-wrap gap-2 mb-2 sm:flex-nowrap">
               <input
                 className={inputCls}
                 placeholder="Name"

@@ -244,7 +244,7 @@ export function Composer({
             <div>
               <label className={labelCls}>Sessions (optional)</label>
               {sessions.map((s, i) => (
-                <div key={i} className="flex gap-2 mb-2">
+                <div key={i} className="flex flex-wrap gap-2 mb-2 sm:flex-nowrap">
                   <input
                     className={inputCls}
                     placeholder="Name"
@@ -434,7 +434,7 @@ export function Composer({
           </div>
         )}
 
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center">
           <button
             type="button"
             onClick={handleTest}

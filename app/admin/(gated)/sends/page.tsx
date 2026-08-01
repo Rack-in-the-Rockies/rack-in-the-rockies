@@ -30,7 +30,34 @@ export default async function SendsPage() {
           here with delivery results.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-coral/10 bg-white">
+        <>
+        <div className="md:hidden space-y-2">
+          {sends.map((s) => (
+            <Link
+              key={s.id}
+              href={`/admin/sends/${s.id}`}
+              className="block rounded-2xl border border-coral/10 bg-white p-3"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-semibold text-text-dark">{s.subject}</p>
+                <span
+                  className={`shrink-0 px-2 py-0.5 rounded-pill text-xs font-semibold ${STATUS_STYLES[s.status] ?? ""}`}
+                >
+                  {s.status}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-text-mid">
+                {s.created_at ? new Date(s.created_at).toLocaleDateString() : ""} &middot;{" "}
+                {audienceLabel(s.audience)}
+              </p>
+              <p className="mt-1 text-xs text-text-light">
+                {s.sent_count}/{s.total_count} sent &middot; {s.delivered_count} delivered &middot;{" "}
+                {s.bounced_count} bounced &middot; {s.complained_count} complaints
+              </p>
+            </Link>
+          ))}
+        </div>
+        <div className="hidden md:block overflow-x-auto rounded-2xl border border-coral/10 bg-white">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-text-mid border-b border-coral/10">
@@ -77,6 +104,7 @@ export default async function SendsPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </main>
   );
