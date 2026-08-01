@@ -15,6 +15,8 @@ import {
   getEvent,
   toEventInput,
 } from "@/lib/events";
+import { validateImageUpload } from "@/lib/registration-rules";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export type EventActionResult = { id: string } | { errors: string[] } | { error: string };
 
@@ -99,4 +101,31 @@ export async function deleteDraftAction(eventId: string): Promise<EventActionRes
     console.error("deleteDraftAction failed", error);
     return { error: error instanceof Error ? error.message : "Something went wrong." };
   }
+}
+
+const EXTENSIONS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+export async function uploadEventImageAction(
+  formData: FormData
+): Promise<{ url: string } | { error: string }> {
+  await requireAdmin();
+  const file = formData.get("file");
+  if (!(file instanceof File)) return { error: "Choose an image file first." };
+  const invalid = validateImageUpload({ type: file.type, size: file.size });
+  if (invalid) return { error: invalid };
+
+  const path = `${crypto.randomUUID()}.${EXTENSIONS[file.type]}`;
+  const storage = supabaseAdmin().storage.from("event-images");
+  const { error } = await storage.upload(path, await file.arrayBuffer(), {
+    contentType: file.type,
+  });
+  if (error) {
+    console.error("event image upload failed", error);
+    return { error: "The upload failed. Try again." };
+  }
+  return { url: storage.getPublicUrl(path).data.publicUrl };
 }

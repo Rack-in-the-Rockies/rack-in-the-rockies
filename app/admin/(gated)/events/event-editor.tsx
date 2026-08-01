@@ -9,7 +9,9 @@ import {
   unpublishEventAction,
   duplicateEventAction,
   deleteDraftAction,
+  uploadEventImageAction,
 } from "@/app/admin/(gated)/events/actions";
+import { formatDateLabel } from "@/lib/registration-rules";
 import { FeaturedEventHero } from "@/components/featured-event-hero";
 import type { EventInput, EventStatus } from "@/lib/event-rules";
 import type { EventWithSessions } from "@/lib/events";
@@ -148,6 +150,18 @@ export function EventEditor({
               value={form.dateLabel}
               onChange={(e) => set({ dateLabel: e.target.value })}
             />
+            <input
+              type="date"
+              aria-label="Pick the event date"
+              className={`${inputCls} mt-1`}
+              onChange={(e) => {
+                const label = formatDateLabel(e.target.value);
+                if (label) set({ dateLabel: label });
+              }}
+            />
+            <p className="text-[11px] text-text-light mt-1">
+              Pick a date to fill the label, then edit it freely (ranges, phrasing).
+            </p>
           </div>
           <div>
             <label className={labelCls}>When it ends (site hides it after this)</label>
@@ -272,6 +286,52 @@ export function EventEditor({
             value={form.externalSignupUrl ?? ""}
             onChange={(e) => set({ externalSignupUrl: e.target.value || null })}
           />
+        </div>
+        <div>
+          <label className={labelCls}>
+            Event image (optional; replaces the default mountain art)
+          </label>
+          {form.imageUrl ? (
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={form.imageUrl}
+                alt=""
+                className="h-16 w-16 rounded-xl object-cover border border-coral/10"
+              />
+              <input
+                className={inputCls}
+                placeholder="Describe the image for screen readers"
+                value={form.imageAlt ?? ""}
+                onChange={(e) => set({ imageAlt: e.target.value || null })}
+              />
+              <button
+                type="button"
+                className="text-xs text-red-500 underline hover:no-underline"
+                onClick={() => set({ imageUrl: null, imageAlt: null })}
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="text-sm text-text-mid"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setNotice(null);
+                startTransition(async () => {
+                  const data = new FormData();
+                  data.set("file", file);
+                  const result = await uploadEventImageAction(data);
+                  if ("url" in result) set({ imageUrl: result.url });
+                  else setNotice({ kind: "error", lines: [result.error] });
+                });
+              }}
+            />
+          )}
         </div>
         <div>
           <label className={labelCls}>
