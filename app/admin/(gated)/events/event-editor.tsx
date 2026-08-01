@@ -32,6 +32,7 @@ const EMPTY: EventInput = {
   paymentInstructions: null,
   imageUrl: null,
   imageAlt: null,
+  decor: "mountains",
   sessions: [],
 };
 
@@ -111,6 +112,7 @@ export function EventEditor({
     payment_instructions: form.paymentInstructions,
     image_url: form.imageUrl,
     image_alt: form.imageAlt,
+    decor: form.decor,
     status,
     created_by: "",
     created_at: "",
@@ -143,24 +145,26 @@ export function EventEditor({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelCls}>Date, as it should read</label>
-            <input
-              className={inputCls}
-              placeholder="July 28, 2026"
-              value={form.dateLabel}
-              onChange={(e) => set({ dateLabel: e.target.value })}
-            />
-            <input
-              type="date"
-              aria-label="Pick the event date"
-              className={`${inputCls} mt-1`}
-              onChange={(e) => {
-                const label = formatDateLabel(e.target.value);
-                if (label) set({ dateLabel: label });
-              }}
-            />
+            <label className={labelCls}>Event date</label>
+            <div className="flex gap-2">
+              <input
+                className={inputCls}
+                placeholder="July 28, 2026"
+                value={form.dateLabel}
+                onChange={(e) => set({ dateLabel: e.target.value })}
+              />
+              <input
+                type="date"
+                aria-label="Pick the event date"
+                className={`${inputCls} max-w-36`}
+                onChange={(e) => {
+                  const label = formatDateLabel(e.target.value);
+                  if (label) set({ dateLabel: label });
+                }}
+              />
+            </div>
             <p className="text-[11px] text-text-light mt-1">
-              Pick a date to fill the label, then edit it freely (ranges, phrasing).
+              Pick with the calendar, then edit the text freely (ranges, phrasing).
             </p>
           </div>
           <div>
@@ -288,8 +292,19 @@ export function EventEditor({
           />
         </div>
         <div>
+          <label className={labelCls}>Background art (used when there is no event image)</label>
+          <select
+            className={inputCls}
+            value={form.decor}
+            onChange={(e) => set({ decor: e.target.value === "blooms" ? "blooms" : "mountains" })}
+          >
+            <option value="mountains">Mountains and tiles</option>
+            <option value="blooms">Flowers and tiles (Bloom style)</option>
+          </select>
+        </div>
+        <div>
           <label className={labelCls}>
-            Event image (optional; replaces the default mountain art)
+            Event image (optional; replaces the background art)
           </label>
           {form.imageUrl ? (
             <div className="flex items-center gap-3">
