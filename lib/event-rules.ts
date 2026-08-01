@@ -1,6 +1,9 @@
 export type EventStatus = "draft" | "published";
 
 export type EventSessionInput = {
+  /** Existing rows keep their database id; new rows are null. Registrations
+   * reference sessions, so ids must survive editing. */
+  id: string | null;
   name: string;
   timeLabel: string;
   priceLabel: string;
@@ -17,6 +20,8 @@ export type EventInput = {
   bannerText: string;
   externalSignupUrl: string | null;
   paymentInstructions: string | null;
+  imageUrl: string | null;
+  imageAlt: string | null;
   sessions: EventSessionInput[];
 };
 
@@ -73,6 +78,7 @@ export function parseEventInput(input: unknown): EventInput | null {
       const capacityNum =
         typeof row.capacity === "number" ? row.capacity : parseInt(str(row.capacity), 10);
       return {
+        id: nullableStr(row.id),
         name: str(row.name),
         timeLabel: str(row.timeLabel),
         priceLabel: str(row.priceLabel),
@@ -90,6 +96,8 @@ export function parseEventInput(input: unknown): EventInput | null {
     bannerText: str(f.bannerText),
     externalSignupUrl: nullableStr(f.externalSignupUrl),
     paymentInstructions: nullableStr(f.paymentInstructions),
+    imageUrl: nullableStr(f.imageUrl),
+    imageAlt: nullableStr(f.imageAlt),
     sessions,
   };
 }
@@ -143,7 +151,17 @@ export function validateEventInput(
   return errors;
 }
 
-/** Duplicate copies the content and clears what is event-date specific. */
+/**
+ * Duplicate copies the content and clears what is event-date specific.
+ * Session ids are cleared so the copy gets fresh rows; the image survives
+ * ("same as last year" usually reuses the art, removal is one click).
+ */
 export function duplicateTransform(source: EventInput): EventInput {
-  return { ...source, dateLabel: "", endsAt: "", bannerText: "", sessions: [...source.sessions] };
+  return {
+    ...source,
+    dateLabel: "",
+    endsAt: "",
+    bannerText: "",
+    sessions: source.sessions.map((s) => ({ ...s, id: null })),
+  };
 }
