@@ -12,33 +12,33 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await requireAdmin();
   return (
     <div className="min-h-screen bg-warm-white">
-      <header className="border-b border-coral/10 px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <header className="border-b border-coral/10 px-4 py-3 md:px-6">
+        <div className="flex items-center justify-between">
           <Link href="/admin" className="font-display font-bold text-text-dark">
             RITR Admin
           </Link>
-          <nav className="flex gap-3 text-sm text-text-mid">
-            <Link href="/admin" className="hover:text-text-dark">
-              Subscribers
-            </Link>
-            <Link href="/admin/compose" className="hover:text-text-dark">
-              Compose
-            </Link>
-            <Link href="/admin/events" className="hover:text-text-dark">
-              Events
-            </Link>
-            <Link href="/admin/sends" className="hover:text-text-dark">
-              Sends
-            </Link>
-          </nav>
+          <form action={signOut}>
+            <button type="submit" className="text-xs text-text-mid underline hover:no-underline">
+              Sign out
+            </button>
+          </form>
         </div>
-        <form action={signOut}>
-          <button type="submit" className="text-xs text-text-mid underline hover:no-underline">
-            Sign out
-          </button>
-        </form>
+        <nav className="mt-2 flex gap-4 overflow-x-auto whitespace-nowrap text-sm text-text-mid md:mt-1">
+          <Link href="/admin" className="hover:text-text-dark">
+            Subscribers
+          </Link>
+          <Link href="/admin/compose" className="hover:text-text-dark">
+            Compose
+          </Link>
+          <Link href="/admin/events" className="hover:text-text-dark">
+            Events
+          </Link>
+          <Link href="/admin/sends" className="hover:text-text-dark">
+            Sends
+          </Link>
+        </nav>
       </header>
-      <div className="px-6 py-6 max-w-5xl mx-auto">{children}</div>
+      <div className="px-4 py-5 md:px-6 md:py-6 max-w-5xl mx-auto">{children}</div>
     </div>
   );
 }
