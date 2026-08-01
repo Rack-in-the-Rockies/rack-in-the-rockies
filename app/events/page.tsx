@@ -3,6 +3,7 @@ import { EventCard } from "@/components/event-card";
 import { SectionHeader } from "@/components/section-header";
 import { BookingForm } from "@/components/booking-form";
 import { FeaturedEventHero } from "@/components/featured-event-hero";
+import { RegistrationForm } from "@/components/registration-form";
 import { getFeaturedEvent } from "@/lib/events";
 
 export async function generateMetadata() {
@@ -23,6 +24,11 @@ export default async function EventsPage() {
   return (
     <main>
       {featured && <FeaturedEventHero event={featured} />}
+      {featured && !featured.external_signup_url && featured.sessions.length > 0 && (
+        <section className="bg-cream px-6 pb-14 md:px-12">
+          <RegistrationForm event={featured} />
+        </section>
+      )}
 
       {/* Gradient Divider */}
       <div className="h-[3px] bg-gradient-to-r from-coral via-tangerine to-golden opacity-30" />
