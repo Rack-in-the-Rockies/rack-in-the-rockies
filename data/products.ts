@@ -99,6 +99,27 @@ export const stores: Store[] = [
     imageGradient: ["#F3EDF9", "#E8DEF2"],
     logo: "/stores/mardijong.jpg",
   },
+  {
+    id: "middle-and-main-mahjong",
+    name: "Middle and Main Mahjong",
+    description:
+      "Handcrafted sets inspired by the places we love, plus bags, racks, and pushers. Tiles that bind.",
+    discountPercent: 0,
+    affiliateUrl:
+      "https://www.middleandmainmahjong.com?sca_ref=11913349.ZZC0BGdnXNMtVpZg",
+    imageGradient: ["#EDF4F8", "#DCE9F2"],
+    logo: "/stores/middle-and-main-mahjong.png",
+  },
+  {
+    id: "mahj-days",
+    name: "Mahj Days",
+    description:
+      "Premium sets, designer mats, and trendy accessories for every mahjong night.",
+    discountPercent: 0,
+    affiliateUrl: "https://www.mahjdays.com?sca_ref=11975945.ORuDVOTZt57",
+    imageGradient: ["#FDF6E8", "#F7E9CE"],
+    logo: "/stores/mahj-days.png",
+  },
 ];
 
 // Backward-compatible products array for homepage preview
