@@ -5,6 +5,7 @@ import { BookingForm } from "@/components/booking-form";
 import { FeaturedEventHero } from "@/components/featured-event-hero";
 import { RegistrationForm } from "@/components/registration-form";
 import { getFeaturedEvent } from "@/lib/events";
+import { themeVars } from "@/lib/event-theme";
 
 export async function generateMetadata() {
   const featured = await getFeaturedEvent();
@@ -26,7 +27,10 @@ export default async function EventsPage() {
       {featured && <FeaturedEventHero event={featured} />}
       {featured && !featured.external_signup_url && featured.sessions.length > 0 && (
         <section
-          className={`px-6 pb-14 md:px-12 ${featured.decor === "winter" ? "bg-ice" : "bg-cream"}`}
+          className={`px-6 pb-14 md:px-12 ${
+            featured.theme ? "bg-(--ev-bg)" : featured.decor === "winter" ? "bg-ice" : "bg-cream"
+          }`}
+          style={featured.theme ? themeVars(featured.theme) : undefined}
         >
           <RegistrationForm event={featured} />
         </section>

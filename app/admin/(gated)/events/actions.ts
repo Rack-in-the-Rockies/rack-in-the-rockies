@@ -17,6 +17,13 @@ import {
 } from "@/lib/events";
 import { validateImageUpload } from "@/lib/registration-rules";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import type { EventTheme } from "@/lib/event-theme";
+import {
+  designEventTheme,
+  MAX_DESCRIPTION,
+  ThemeDesignError,
+  type EventContext,
+} from "@/lib/theme-designer";
 
 export type EventActionResult = { id: string } | { errors: string[] } | { error: string };
 
@@ -128,4 +135,33 @@ export async function uploadEventImageAction(
     return { error: "The upload failed. Try again." };
   }
   return { url: storage.getPublicUrl(path).data.publicUrl };
+}
+
+/**
+ * Ask Claude for a design. Returns the sanitized theme for the editor to
+ * preview; nothing is saved until the admin saves the event.
+ */
+export async function generateEventThemeAction(
+  description: string,
+  event: EventContext
+): Promise<{ theme: EventTheme } | { error: string }> {
+  await requireAdmin();
+  const trimmed = String(description ?? "").trim();
+  if (!trimmed) return { error: "Describe the look you want first." };
+  if (trimmed.length > MAX_DESCRIPTION) {
+    return { error: `Keep the description under ${MAX_DESCRIPTION} characters.` };
+  }
+  const context: EventContext = {
+    title: String(event?.title ?? "").slice(0, 200),
+    dateLabel: String(event?.dateLabel ?? "").slice(0, 200),
+    location: String(event?.location ?? "").slice(0, 200),
+    blurb: String(event?.blurb ?? "").slice(0, 2000),
+  };
+  try {
+    return { theme: await designEventTheme(trimmed, context) };
+  } catch (error) {
+    if (error instanceof ThemeDesignError) return { error: error.message };
+    console.error("generateEventThemeAction failed", error);
+    return { error: "The design service did not respond. Try again in a minute." };
+  }
 }

@@ -54,6 +54,8 @@ const complete: EventInput = {
   imageUrl: null,
   imageAlt: null,
   decor: "mountains",
+  theme: null,
+  themePrompt: null,
   sessions: [{ id: null, name: "Intro", timeLabel: "4:45 - 8:00 PM", priceLabel: "$60", capacity: 24 }],
 };
 
