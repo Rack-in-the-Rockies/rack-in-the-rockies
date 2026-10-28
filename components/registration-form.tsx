@@ -4,8 +4,19 @@ import { useEffect, useState, useTransition } from "react";
 import { ConsentNotice } from "@/components/consent-notice";
 import type { EventWithSessions } from "@/lib/events";
 
-const inputCls =
-  "w-full px-4 py-2.5 rounded-xl border border-coral/10 bg-warm-white text-sm text-text-dark placeholder:text-text-light focus:outline-none focus:border-coral/30";
+// Winter events swap the coral accents for the icy blues of their hero.
+const ACCENTS = {
+  warm: {
+    input: "border-coral/10 bg-warm-white focus:border-coral/30",
+    session: { full: "border-coral/5", selected: "border-coral/40", idle: "border-coral/10" },
+    button: "from-coral to-tangerine hover:shadow-coral/30",
+  },
+  winter: {
+    input: "border-frost bg-white focus:border-glacier/50",
+    session: { full: "border-frost/50", selected: "border-glacier/60", idle: "border-frost" },
+    button: "from-winter-blue to-glacier hover:shadow-glacier/30",
+  },
+};
 
 type Remaining = Record<string, number | null>;
 
@@ -20,6 +31,8 @@ export function RegistrationForm({ event }: { event: EventWithSessions }) {
   const [status, setStatus] = useState<"idle" | "sent">("idle");
   const [errors, setErrors] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
+  const accent = event.decor === "winter" ? ACCENTS.winter : ACCENTS.warm;
+  const inputCls = `w-full px-4 py-2.5 rounded-xl border text-sm text-text-dark placeholder:text-text-light focus:outline-none ${accent.input}`;
 
   useEffect(() => {
     fetch(`/api/register?eventId=${event.id}`)
@@ -96,10 +109,10 @@ export function RegistrationForm({ event }: { event: EventWithSessions }) {
               key={s.id}
               className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${
                 full
-                  ? "border-coral/5 bg-cream/50 text-text-light"
+                  ? `${accent.session.full} bg-cream/50 text-text-light`
                   : sessionId === s.id
-                    ? "border-coral/40 bg-white"
-                    : "border-coral/10 bg-white"
+                    ? `${accent.session.selected} bg-white`
+                    : `${accent.session.idle} bg-white`
               }`}
             >
               <span className="flex items-center gap-2">
@@ -172,7 +185,7 @@ export function RegistrationForm({ event }: { event: EventWithSessions }) {
       <button
         type="submit"
         disabled={isPending || soldOut(sessionId)}
-        className="w-full rounded-pill bg-gradient-to-r from-coral to-tangerine py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-coral/30 disabled:opacity-50"
+        className={`w-full rounded-pill bg-gradient-to-r py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 ${accent.button}`}
       >
         {isPending ? "Saving your seat..." : "Reserve Your Seat"}
       </button>
