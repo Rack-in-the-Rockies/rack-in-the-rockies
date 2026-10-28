@@ -10,6 +10,7 @@ import {
   duplicateEventAction,
   deleteDraftAction,
   uploadEventImageAction,
+  generateEventThemeAction,
 } from "@/app/admin/(gated)/events/actions";
 import { formatDateLabel } from "@/lib/registration-rules";
 import { FeaturedEventHero } from "@/components/featured-event-hero";
@@ -33,6 +34,8 @@ const EMPTY: EventInput = {
   imageUrl: null,
   imageAlt: null,
   decor: "mountains",
+  theme: null,
+  themePrompt: null,
   sessions: [],
 };
 
@@ -78,6 +81,8 @@ export function EventEditor({
   const [form, setForm] = useState<EventInput>(initial ?? EMPTY);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; lines: string[] } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isDesigning, startDesigning] = useTransition();
+  const [designError, setDesignError] = useState<string | null>(null);
 
   const set = (patch: Partial<EventInput>) => setForm((p) => ({ ...p, ...patch }));
 
@@ -113,6 +118,8 @@ export function EventEditor({
     image_url: form.imageUrl,
     image_alt: form.imageAlt,
     decor: form.decor,
+    theme: form.theme,
+    theme_prompt: form.themePrompt,
     status,
     created_by: "",
     created_at: "",
@@ -291,8 +298,76 @@ export function EventEditor({
             onChange={(e) => set({ externalSignupUrl: e.target.value || null })}
           />
         </div>
+        <div className="rounded-2xl border border-tangerine/20 bg-tangerine/[0.04] p-4 space-y-3">
+          <div>
+            <p className="text-sm font-semibold text-text-dark">Design with AI</p>
+            <p className="text-xs text-text-mid">
+              Describe the look and Claude designs the colors and tile art. Fill in the title and
+              details first; they shape the design too. Nothing goes live until you save.
+            </p>
+          </div>
+          <textarea
+            className={inputCls}
+            rows={3}
+            maxLength={600}
+            placeholder="Example: icy winter blues, snowflakes, mittens, and teacups, with a cozy handwritten feel"
+            value={form.themePrompt ?? ""}
+            onChange={(e) => set({ themePrompt: e.target.value || null })}
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              disabled={isDesigning || !form.themePrompt?.trim()}
+              onClick={() => {
+                setDesignError(null);
+                startDesigning(async () => {
+                  const result = await generateEventThemeAction(form.themePrompt ?? "", {
+                    title: form.title,
+                    dateLabel: form.dateLabel,
+                    location: form.location,
+                    blurb: form.blurb,
+                  });
+                  if ("theme" in result) set({ theme: result.theme });
+                  else setDesignError(result.error);
+                });
+              }}
+              className="rounded-pill bg-gradient-to-r from-coral to-tangerine px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+            >
+              {isDesigning ? "Designing..." : form.theme ? "Try another version" : "Generate design"}
+            </button>
+            {isDesigning && (
+              <span className="text-xs text-text-light">This can take up to a minute.</span>
+            )}
+          </div>
+          {designError && <p className="text-sm text-red-500">{designError}</p>}
+          {form.theme && (
+            <div className="flex flex-wrap items-center gap-3 rounded-xl bg-white px-3 py-2 border border-coral/10">
+              <span className="text-xs font-semibold text-text-dark">{form.theme.name}</span>
+              <span className="flex gap-1" aria-hidden="true">
+                {[
+                  form.theme.palette.background,
+                  form.theme.palette.ink,
+                  form.theme.palette.accent,
+                  form.theme.palette.tileEdge,
+                ].map((c, i) => (
+                  <span key={i} className="h-4 w-4 rounded-full border border-black/10" style={{ background: c }} />
+                ))}
+              </span>
+              <span className="text-xs text-text-light">Shown in the preview</span>
+              <button
+                type="button"
+                className="ml-auto text-xs text-red-500 underline hover:no-underline"
+                onClick={() => set({ theme: null })}
+              >
+                Remove design
+              </button>
+            </div>
+          )}
+        </div>
         <div>
-          <label className={labelCls}>Background art (used when there is no event image)</label>
+          <label className={labelCls}>
+            Background art (used when there is no AI design or event image)
+          </label>
           <select
             className={inputCls}
             value={form.decor}

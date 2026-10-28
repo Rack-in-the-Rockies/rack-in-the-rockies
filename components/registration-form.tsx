@@ -16,6 +16,13 @@ const ACCENTS = {
     session: { full: "border-frost/50", selected: "border-glacier/60", idle: "border-frost" },
     button: "from-winter-blue to-glacier hover:shadow-glacier/30",
   },
+  // AI-designed themes: colors come from the --ev-* variables the events
+  // page sets on the surrounding section.
+  custom: {
+    input: "border-(--ev-tile-edge) bg-(--ev-surface) focus:border-(--ev-accent)",
+    session: { full: "border-(--ev-tile-edge)", selected: "border-(--ev-accent)", idle: "border-(--ev-tile-edge)" },
+    button: "from-(--ev-accent) to-(--ev-accent) hover:shadow-black/10",
+  },
 };
 
 type Remaining = Record<string, number | null>;
@@ -31,7 +38,11 @@ export function RegistrationForm({ event }: { event: EventWithSessions }) {
   const [status, setStatus] = useState<"idle" | "sent">("idle");
   const [errors, setErrors] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
-  const accent = event.decor === "winter" ? ACCENTS.winter : ACCENTS.warm;
+  const accent = event.theme
+    ? ACCENTS.custom
+    : event.decor === "winter"
+      ? ACCENTS.winter
+      : ACCENTS.warm;
   const inputCls = `w-full px-4 py-2.5 rounded-xl border text-sm text-text-dark placeholder:text-text-light focus:outline-none ${accent.input}`;
 
   useEffect(() => {

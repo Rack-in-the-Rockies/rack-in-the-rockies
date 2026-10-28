@@ -2,10 +2,12 @@ import { Dancing_Script } from "next/font/google";
 import { EventHeroDefaultDecor } from "@/components/event-hero-default-decor";
 import { EventHeroBloomDecor } from "@/components/event-hero-bloom-decor";
 import { EventHeroWinterDecor } from "@/components/event-hero-winter-decor";
+import { EventHeroCustomDecor } from "@/components/event-hero-custom-decor";
+import { themeVars, type EventTheme } from "@/lib/event-theme";
 import { splitTitleAccent, type EventDecor } from "@/lib/event-rules";
 import type { EventWithSessions } from "@/lib/events";
 
-// Only the winter theme uses this, for the handwritten title accent.
+// The handwritten title accent for winter and script-styled AI themes.
 const script = Dancing_Script({ subsets: ["latin"], weight: "600", display: "swap" });
 
 type HeroTheme = {
@@ -60,6 +62,31 @@ const WINTER: HeroTheme = {
   fineprint: "text-slate-blue/80",
 };
 
+const ACCENT_STYLES: Record<EventTheme["accentFont"], string> = {
+  script: `${script.className} block pt-1 text-[1.15em] font-semibold`,
+  "serif-italic": "italic",
+  "sans-bold": "font-body font-extrabold",
+};
+
+/** AI-designed themes read their colors from CSS variables (themeVars). */
+function customTheme(theme: EventTheme): HeroTheme {
+  const glow = "bg-[radial-gradient(ellipse,var(--ev-accent-soft)_0%,transparent_70%)]";
+  return {
+    section: `bg-(--ev-bg) px-6 md:px-12 ${theme.layout === "frame" ? "py-28 md:py-32" : "py-14 md:py-16"}`,
+    blushes: [glow, `${glow} opacity-70`],
+    badge: "bg-(--ev-accent-soft) text-(--ev-ink)",
+    title: "text-(--ev-ink)",
+    accent: `${ACCENT_STYLES[theme.accentFont]} text-(--ev-accent)`,
+    subtle: "text-(--ev-body)",
+    divider: "text-(--ev-accent) opacity-40",
+    card: "border-(--ev-tile-edge) bg-(--ev-surface)",
+    cardTitle: "text-(--ev-ink)",
+    price: "text-(--ev-accent)",
+    cta: "bg-(--ev-accent) hover:shadow-black/10",
+    fineprint: "text-(--ev-body) opacity-80",
+  };
+}
+
 const THEMES: Record<EventDecor, HeroTheme> = {
   mountains: WARM,
   blooms: WARM,
@@ -69,10 +96,14 @@ const THEMES: Record<EventDecor, HeroTheme> = {
 export function FeaturedEventHero({ event }: { event: EventWithSessions }) {
   const { title, partner, date_label, location, blurb, sessions, external_signup_url } = event;
   const { lead, accent } = splitTitleAccent(title);
-  const theme = THEMES[event.decor] ?? WARM;
+  const custom = event.theme;
+  const theme = custom ? customTheme(custom) : (THEMES[event.decor] ?? WARM);
 
   return (
-    <section className={`relative overflow-hidden ${theme.section}`}>
+    <section
+      className={`relative overflow-hidden ${theme.section}`}
+      style={custom ? themeVars(custom) : undefined}
+    >
       {/* Background blushes */}
       <div className="absolute inset-0 z-0" aria-hidden="true">
         <div className={`absolute -top-[25%] -right-[10%] h-[150%] w-[65%] ${theme.blushes[0]}`} />
@@ -88,6 +119,8 @@ export function FeaturedEventHero({ event }: { event: EventWithSessions }) {
             className="absolute -right-6 top-1/2 hidden w-72 -translate-y-1/2 rotate-3 rounded-2xl border-4 border-white object-cover shadow-xl lg:block xl:w-80"
           />
         </div>
+      ) : custom ? (
+        <EventHeroCustomDecor theme={custom} />
       ) : event.decor === "winter" ? (
         <EventHeroWinterDecor />
       ) : event.decor === "blooms" ? (
@@ -123,7 +156,7 @@ export function FeaturedEventHero({ event }: { event: EventWithSessions }) {
           className={`mt-7 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm font-semibold ${theme.title}`}
         >
           <span className="flex items-center gap-2">
-            <span aria-hidden="true">{event.decor === "winter" ? "❄️" : "🀄"}</span>
+            <span aria-hidden="true">{custom ? custom.dateIcon : event.decor === "winter" ? "❄️" : "🀄"}</span>
             {date_label}
           </span>
           <span className={theme.divider} aria-hidden="true">

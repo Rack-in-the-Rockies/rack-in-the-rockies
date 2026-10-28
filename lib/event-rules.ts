@@ -1,3 +1,5 @@
+import { sanitizeTheme, type EventTheme } from "@/lib/event-theme";
+
 export type EventStatus = "draft" | "published";
 export type EventDecor = "mountains" | "blooms" | "winter";
 
@@ -26,6 +28,10 @@ export type EventInput = {
   imageUrl: string | null;
   imageAlt: string | null;
   decor: EventDecor;
+  /** AI-designed look; overrides the decor when set. */
+  theme: EventTheme | null;
+  /** The description the theme was generated from. */
+  themePrompt: string | null;
   sessions: EventSessionInput[];
 };
 
@@ -103,6 +109,8 @@ export function parseEventInput(input: unknown): EventInput | null {
     imageUrl: nullableStr(f.imageUrl),
     imageAlt: nullableStr(f.imageAlt),
     decor: DECORS.find((d) => d === f.decor) ?? "mountains",
+    theme: sanitizeTheme(f.theme),
+    themePrompt: nullableStr(f.themePrompt),
     sessions,
   };
 }

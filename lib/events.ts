@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { type EventDecor, type EventInput, type EventStatus } from "@/lib/event-rules";
+import { sanitizeTheme, type EventTheme } from "@/lib/event-theme";
 
 export type EventRow = {
   id: string;
@@ -15,6 +16,8 @@ export type EventRow = {
   image_url: string | null;
   image_alt: string | null;
   decor: EventDecor;
+  theme: EventTheme | null;
+  theme_prompt: string | null;
   status: EventStatus;
   created_by: string;
   created_at: string;
@@ -41,6 +44,8 @@ function withSessions(row: Joined): EventWithSessions {
   const { event_sessions, ...event } = row;
   return {
     ...event,
+    // Saved themes are sanitized on the way in; re-check on the way out.
+    theme: sanitizeTheme(event.theme),
     sessions: [...(event_sessions ?? [])].sort((a, b) => a.sort_order - b.sort_order),
   };
 }
@@ -110,6 +115,8 @@ function toRowPatch(input: EventInput) {
     image_url: input.imageUrl,
     image_alt: input.imageAlt,
     decor: input.decor,
+    theme: input.theme,
+    theme_prompt: input.themePrompt,
   };
 }
 
@@ -220,6 +227,8 @@ export function toEventInput(e: EventWithSessions): EventInput {
     imageUrl: e.image_url,
     imageAlt: e.image_alt,
     decor: e.decor,
+    theme: sanitizeTheme(e.theme),
+    themePrompt: e.theme_prompt,
     sessions: e.sessions.map((s) => ({
       id: s.id,
       name: s.name,
