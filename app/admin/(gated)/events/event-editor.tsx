@@ -13,7 +13,7 @@ import {
 } from "@/app/admin/(gated)/events/actions";
 import { formatDateLabel } from "@/lib/registration-rules";
 import { FeaturedEventHero } from "@/components/featured-event-hero";
-import type { EventInput, EventStatus } from "@/lib/event-rules";
+import type { EventDecor, EventInput, EventStatus } from "@/lib/event-rules";
 import type { EventWithSessions } from "@/lib/events";
 
 const inputCls =
@@ -296,15 +296,16 @@ export function EventEditor({
           <select
             className={inputCls}
             value={form.decor}
-            onChange={(e) => set({ decor: e.target.value === "blooms" ? "blooms" : "mountains" })}
+            onChange={(e) => set({ decor: e.target.value as EventDecor })}
           >
             <option value="mountains">Mountains and tiles</option>
             <option value="blooms">Flowers and tiles (Bloom style)</option>
+            <option value="winter">Winter tiles (icy blue, snowflakes)</option>
           </select>
         </div>
         <div>
           <label className={labelCls}>
-            Event image (optional; replaces the background art)
+            Event image (optional; shows as a photo card and replaces the background art)
           </label>
           {form.imageUrl ? (
             <div className="flex items-center gap-3">
@@ -329,23 +330,29 @@ export function EventEditor({
               </button>
             </div>
           ) : (
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="text-sm text-text-mid"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setNotice(null);
-                startTransition(async () => {
-                  const data = new FormData();
-                  data.set("file", file);
-                  const result = await uploadEventImageAction(data);
-                  if ("url" in result) set({ imageUrl: result.url });
-                  else setNotice({ kind: "error", lines: [result.error] });
-                });
-              }}
-            />
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-coral/20 bg-white px-4 py-3 transition-colors hover:border-coral/40 focus-within:border-coral/40">
+              <span className="rounded-pill bg-tangerine/10 px-3 py-1.5 text-xs font-semibold text-tangerine">
+                Upload image
+              </span>
+              <span className="text-xs text-text-light">JPG, PNG, or WebP, up to 5 MB</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setNotice(null);
+                  startTransition(async () => {
+                    const data = new FormData();
+                    data.set("file", file);
+                    const result = await uploadEventImageAction(data);
+                    if ("url" in result) set({ imageUrl: result.url });
+                    else setNotice({ kind: "error", lines: [result.error] });
+                  });
+                }}
+              />
+            </label>
           )}
         </div>
         <div>
