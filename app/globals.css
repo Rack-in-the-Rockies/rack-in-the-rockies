@@ -11,6 +11,14 @@
   --color-text-mid: #6B5454;
   --color-text-light: #9A8585;
 
+  /* Winter event theme, from the Snowshoe Mahjong save-the-date */
+  --color-ice: #EEF4FB;
+  --color-frost: #C9D9EE;
+  --color-glacier: #5B84C4;
+  --color-winter-blue: #3E68A8;
+  --color-midnight: #2E3F5C;
+  --color-slate-blue: #5A6B85;
+
   --font-display: var(--font-playfair);
   --font-body: var(--font-dm-sans);
 

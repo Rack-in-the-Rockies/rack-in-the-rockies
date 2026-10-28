@@ -164,8 +164,9 @@ describe("duplicateTransform", () => {
 });
 
 describe("decor", () => {
-  it("parses blooms and defaults everything else to mountains", () => {
+  it("parses blooms and winter and defaults everything else to mountains", () => {
     expect(parseEventInput({ ...complete, decor: "blooms" })!.decor).toBe("blooms");
+    expect(parseEventInput({ ...complete, decor: "winter" })!.decor).toBe("winter");
     expect(parseEventInput({ ...complete, decor: "confetti" })!.decor).toBe("mountains");
     expect(parseEventInput({ ...complete, decor: undefined })!.decor).toBe("mountains");
   });

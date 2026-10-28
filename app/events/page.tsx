@@ -25,7 +25,9 @@ export default async function EventsPage() {
     <main>
       {featured && <FeaturedEventHero event={featured} />}
       {featured && !featured.external_signup_url && featured.sessions.length > 0 && (
-        <section className="bg-cream px-6 pb-14 md:px-12">
+        <section
+          className={`px-6 pb-14 md:px-12 ${featured.decor === "winter" ? "bg-ice" : "bg-cream"}`}
+        >
           <RegistrationForm event={featured} />
         </section>
       )}

@@ -1,5 +1,7 @@
 export type EventStatus = "draft" | "published";
-export type EventDecor = "mountains" | "blooms";
+export type EventDecor = "mountains" | "blooms" | "winter";
+
+const DECORS: readonly EventDecor[] = ["mountains", "blooms", "winter"];
 
 export type EventSessionInput = {
   /** Existing rows keep their database id; new rows are null. Registrations
@@ -100,7 +102,7 @@ export function parseEventInput(input: unknown): EventInput | null {
     paymentInstructions: nullableStr(f.paymentInstructions),
     imageUrl: nullableStr(f.imageUrl),
     imageAlt: nullableStr(f.imageAlt),
-    decor: f.decor === "blooms" ? "blooms" : "mountains",
+    decor: DECORS.find((d) => d === f.decor) ?? "mountains",
     sessions,
   };
 }
