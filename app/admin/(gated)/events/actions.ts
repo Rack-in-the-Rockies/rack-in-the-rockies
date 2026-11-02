@@ -116,25 +116,34 @@ const EXTENSIONS: Record<string, string> = {
   "image/webp": "webp",
 };
 
-export async function uploadEventImageAction(
-  formData: FormData
-): Promise<{ url: string } | { error: string }> {
+/**
+ * Step one of an image upload. Server actions cap request bodies at 1 MB,
+ * so the file itself never passes through here: this validates the file's
+ * type and size and returns a one-time signed URL the browser uploads to
+ * directly. The bucket enforces the same limits.
+ */
+export async function createEventImageUploadAction(file: {
+  type: string;
+  size: number;
+}): Promise<{ path: string; token: string; publicUrl: string } | { error: string }> {
   await requireAdmin();
-  const file = formData.get("file");
-  if (!(file instanceof File)) return { error: "Choose an image file first." };
-  const invalid = validateImageUpload({ type: file.type, size: file.size });
+  const type = String(file?.type ?? "");
+  const size = Number(file?.size ?? 0);
+  const invalid = validateImageUpload({ type, size });
   if (invalid) return { error: invalid };
 
-  const path = `${crypto.randomUUID()}.${EXTENSIONS[file.type]}`;
+  const path = `${crypto.randomUUID()}.${EXTENSIONS[type]}`;
   const storage = supabaseAdmin().storage.from("event-images");
-  const { error } = await storage.upload(path, await file.arrayBuffer(), {
-    contentType: file.type,
-  });
-  if (error) {
-    console.error("event image upload failed", error);
-    return { error: "The upload failed. Try again." };
+  const { data, error } = await storage.createSignedUploadUrl(path);
+  if (error || !data) {
+    console.error("event image signed upload url failed", error);
+    return { error: "The upload could not start. Try again." };
   }
-  return { url: storage.getPublicUrl(path).data.publicUrl };
+  return {
+    path: data.path,
+    token: data.token,
+    publicUrl: storage.getPublicUrl(data.path).data.publicUrl,
+  };
 }
 
 /**

@@ -13,11 +13,14 @@ vi.mock("@/lib/events", () => ({
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => {
-  const upload = vi.fn(async () => ({ data: { path: "abc.png" }, error: null }));
-  const getPublicUrl = vi.fn(() => ({ data: { publicUrl: "https://cdn.example/abc.png" } }));
+  const createSignedUploadUrl = vi.fn(async (path: string) => ({
+    data: { path, token: "tok-1", signedUrl: `https://cdn.example/sign/${path}?token=tok-1` },
+    error: null,
+  }));
+  const getPublicUrl = vi.fn((path: string) => ({ data: { publicUrl: `https://cdn.example/${path}` } }));
   return {
     supabaseAdmin: vi.fn(() => ({
-      storage: { from: vi.fn(() => ({ upload, getPublicUrl })) },
+      storage: { from: vi.fn(() => ({ createSignedUploadUrl, getPublicUrl })) },
     })),
   };
 });
@@ -28,7 +31,7 @@ import {
   unpublishEventAction,
   duplicateEventAction,
   deleteDraftAction,
-  uploadEventImageAction,
+  createEventImageUploadAction,
 } from "@/app/admin/(gated)/events/actions";
 import { requireAdmin } from "@/lib/auth";
 import {
@@ -45,6 +48,7 @@ const fullInput = {
   title: "Test Event",
   partner: null,
   dateLabel: "October 1, 2026",
+  startsAt: "2099-10-01T16:00:00-06:00",
   endsAt: "2099-10-01T20:00:00-06:00",
   location: "Denver",
   blurb: "A blurb.",
@@ -135,26 +139,26 @@ describe("event actions", () => {
   });
 });
 
-describe("uploadEventImageAction", () => {
-  function fileForm(type: string, size: number) {
-    const form = new FormData();
-    const file = new File([new Uint8Array(size)], "photo.png", { type });
-    form.set("file", file);
-    return form;
-  }
-
-  it("verifies the admin session and uploads valid images", async () => {
-    const result = await uploadEventImageAction(fileForm("image/png", 1024));
+describe("createEventImageUploadAction", () => {
+  it("verifies the admin session and issues a signed upload for valid images", async () => {
+    const result = await createEventImageUploadAction({ type: "image/png", size: 3 * 1024 * 1024 });
     expect(requireAdmin).toHaveBeenCalled();
-    expect("url" in result && result.url).toBe("https://cdn.example/abc.png");
+    if (!("token" in result)) throw new Error("expected a signed upload");
+    expect(result.path).toMatch(/^[0-9a-f-]+\.png$/);
+    expect(result.token).toBe("tok-1");
+    expect(result.publicUrl).toBe(`https://cdn.example/${result.path}`);
   });
 
   it("rejects wrong types and oversize files", async () => {
-    expect("error" in (await uploadEventImageAction(fileForm("image/gif", 10)))).toBe(true);
-    expect("error" in (await uploadEventImageAction(fileForm("image/png", 6 * 1024 * 1024)))).toBe(true);
+    expect("error" in (await createEventImageUploadAction({ type: "image/gif", size: 10 }))).toBe(true);
+    expect(
+      "error" in (await createEventImageUploadAction({ type: "image/png", size: 6 * 1024 * 1024 }))
+    ).toBe(true);
   });
 
-  it("rejects a missing file", async () => {
-    expect("error" in (await uploadEventImageAction(new FormData()))).toBe(true);
+  it("rejects a missing file description", async () => {
+    expect(
+      "error" in (await createEventImageUploadAction(undefined as unknown as { type: string; size: number }))
+    ).toBe(true);
   });
 });

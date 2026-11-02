@@ -9,10 +9,11 @@ import {
   unpublishEventAction,
   duplicateEventAction,
   deleteDraftAction,
-  uploadEventImageAction,
+  createEventImageUploadAction,
   generateEventThemeAction,
 } from "@/app/admin/(gated)/events/actions";
 import { formatDateLabel } from "@/lib/registration-rules";
+import { supabaseBrowser } from "@/lib/supabase/browser";
 import { FeaturedEventHero } from "@/components/featured-event-hero";
 import type { EventDecor, EventInput, EventStatus } from "@/lib/event-rules";
 import type { EventWithSessions } from "@/lib/events";
@@ -25,6 +26,7 @@ const EMPTY: EventInput = {
   title: "",
   partner: null,
   dateLabel: "",
+  startsAt: "",
   endsAt: "",
   location: "",
   blurb: "",
@@ -47,6 +49,20 @@ function toLocalInputValue(iso: string): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+/** datetime-local value back to an ISO string, or "" when cleared. */
+function fromLocalInputValue(value: string): string {
+  if (!value) return "";
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+}
+
+/** "January 21, 2027" for an ISO start, or "" when there is none. */
+function labelForStart(iso: string): string {
+  return formatDateLabel(toLocalInputValue(iso).slice(0, 10));
+}
+
+const DEFAULT_LENGTH_MS = 3 * 60 * 60 * 1000;
 
 export function DuplicateButton({ eventId }: { eventId: string }) {
   const router = useRouter();
@@ -109,6 +125,7 @@ export function EventEditor({
     title: form.title || "Untitled Event",
     partner: form.partner,
     date_label: form.dateLabel || "Date to come",
+    starts_at: form.startsAt || null,
     ends_at: form.endsAt || null,
     location: form.location || "Location to come",
     blurb: form.blurb,
@@ -150,41 +167,63 @@ export function EventEditor({
             onChange={(e) => set({ partner: e.target.value || null })}
           />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className={labelCls}>Event date</label>
-            <div className="flex gap-2">
-              <input
-                className={inputCls}
-                placeholder="July 28, 2026"
-                value={form.dateLabel}
-                onChange={(e) => set({ dateLabel: e.target.value })}
-              />
-              <input
-                type="date"
-                aria-label="Pick the event date"
-                className={`${inputCls} max-w-36`}
-                onChange={(e) => {
-                  const label = formatDateLabel(e.target.value);
-                  if (label) set({ dateLabel: label });
-                }}
-              />
-            </div>
-            <p className="text-[11px] text-text-light mt-1">
-              Pick with the calendar, then edit the text freely (ranges, phrasing).
-            </p>
-          </div>
-          <div>
-            <label className={labelCls}>When it ends (site hides it after this)</label>
+            <label className={labelCls} htmlFor="event-starts-at">
+              Starts
+            </label>
             <input
+              id="event-starts-at"
               type="datetime-local"
               className={inputCls}
-              value={toLocalInputValue(form.endsAt)}
-              onChange={(e) =>
-                set({ endsAt: e.target.value ? new Date(e.target.value).toISOString() : "" })
-              }
+              value={toLocalInputValue(form.startsAt)}
+              onChange={(e) => {
+                const startsAt = fromLocalInputValue(e.target.value);
+                const patch: Partial<EventInput> = { startsAt };
+                // Keep the printed date in step with the start until the
+                // admin writes their own wording (ranges, phrasing).
+                if (!form.dateLabel.trim() || form.dateLabel === labelForStart(form.startsAt)) {
+                  patch.dateLabel = labelForStart(startsAt);
+                }
+                // A first start gets a sensible end so the event cannot be
+                // saved without one; the admin adjusts it as needed.
+                if (startsAt && !form.endsAt) {
+                  patch.endsAt = new Date(
+                    new Date(startsAt).getTime() + DEFAULT_LENGTH_MS
+                  ).toISOString();
+                }
+                set(patch);
+              }}
             />
           </div>
+          <div>
+            <label className={labelCls} htmlFor="event-ends-at">
+              Ends (the site hides the event after this)
+            </label>
+            <input
+              id="event-ends-at"
+              type="datetime-local"
+              className={inputCls}
+              min={toLocalInputValue(form.startsAt) || undefined}
+              value={toLocalInputValue(form.endsAt)}
+              onChange={(e) => set({ endsAt: fromLocalInputValue(e.target.value) })}
+            />
+          </div>
+        </div>
+        <div>
+          <label className={labelCls} htmlFor="event-date-label">
+            Date as it reads on the site
+          </label>
+          <input
+            id="event-date-label"
+            className={inputCls}
+            placeholder="January 21, 2027"
+            value={form.dateLabel}
+            onChange={(e) => set({ dateLabel: e.target.value })}
+          />
+          <p className="text-[11px] text-text-light mt-1">
+            Filled in from the start date. Edit it freely for ranges or other phrasing.
+          </p>
         </div>
         <div>
           <label className={labelCls}>Location</label>
@@ -418,12 +457,30 @@ export function EventEditor({
                   const file = e.target.files?.[0];
                   if (!file) return;
                   setNotice(null);
+                  // Let the same file be picked again after a failure.
+                  e.target.value = "";
                   startTransition(async () => {
-                    const data = new FormData();
-                    data.set("file", file);
-                    const result = await uploadEventImageAction(data);
-                    if ("url" in result) set({ imageUrl: result.url });
-                    else setNotice({ kind: "error", lines: [result.error] });
+                    // The server validates and signs; the file goes straight
+                    // to storage (server actions cap bodies at 1 MB).
+                    const signed = await createEventImageUploadAction({
+                      type: file.type,
+                      size: file.size,
+                    });
+                    if ("error" in signed) {
+                      setNotice({ kind: "error", lines: [signed.error] });
+                      return;
+                    }
+                    const { error } = await supabaseBrowser()
+                      .storage.from("event-images")
+                      .uploadToSignedUrl(signed.path, signed.token, file, {
+                        contentType: file.type,
+                      });
+                    if (error) {
+                      console.error("event image upload failed", error);
+                      setNotice({ kind: "error", lines: ["The upload failed. Try again."] });
+                      return;
+                    }
+                    set({ imageUrl: signed.publicUrl });
                   });
                 }}
               />

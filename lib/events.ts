@@ -7,6 +7,7 @@ export type EventRow = {
   title: string;
   partner: string | null;
   date_label: string;
+  starts_at: string | null;
   ends_at: string | null;
   location: string;
   blurb: string;
@@ -106,6 +107,7 @@ function toRowPatch(input: EventInput) {
     title: input.title.trim(),
     partner: input.partner,
     date_label: input.dateLabel.trim(),
+    starts_at: input.startsAt.trim() ? new Date(input.startsAt).toISOString() : null,
     ends_at: input.endsAt.trim() ? new Date(input.endsAt).toISOString() : null,
     location: input.location.trim(),
     blurb: input.blurb.trim(),
@@ -218,6 +220,7 @@ export function toEventInput(e: EventWithSessions): EventInput {
     title: e.title,
     partner: e.partner,
     dateLabel: e.date_label,
+    startsAt: e.starts_at ?? "",
     endsAt: e.ends_at ?? "",
     location: e.location,
     blurb: e.blurb,

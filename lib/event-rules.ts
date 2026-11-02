@@ -19,6 +19,7 @@ export type EventInput = {
   title: string;
   partner: string | null;
   dateLabel: string;
+  startsAt: string;
   endsAt: string;
   location: string;
   blurb: string;
@@ -100,6 +101,7 @@ export function parseEventInput(input: unknown): EventInput | null {
     title: str(f.title),
     partner: nullableStr(f.partner),
     dateLabel: str(f.dateLabel),
+    startsAt: str(f.startsAt),
     endsAt: str(f.endsAt),
     location: str(f.location),
     blurb: str(f.blurb),
@@ -134,8 +136,22 @@ export function validateEventInput(
 ): string[] {
   const errors: string[] = [];
   if (!input.title.trim()) errors.push("Add a title.");
-  if (input.endsAt.trim() && Number.isNaN(new Date(input.endsAt).getTime())) {
+  const startMs = input.startsAt.trim() ? new Date(input.startsAt).getTime() : null;
+  const endMs = input.endsAt.trim() ? new Date(input.endsAt).getTime() : null;
+  if (startMs !== null && Number.isNaN(startMs)) {
+    errors.push("The start date and time could not be read. Pick it again.");
+  }
+  if (endMs !== null && Number.isNaN(endMs)) {
     errors.push("The end date and time could not be read. Pick it again.");
+  }
+  if (
+    startMs !== null &&
+    endMs !== null &&
+    !Number.isNaN(startMs) &&
+    !Number.isNaN(endMs) &&
+    endMs <= startMs
+  ) {
+    errors.push("The event must end after it starts.");
   }
   if (input.externalSignupUrl && !isWebUrl(input.externalSignupUrl)) {
     errors.push("The sign-up link must start with http:// or https://.");
@@ -144,6 +160,7 @@ export function validateEventInput(
 
   const now = opts.now ?? new Date();
   if (!input.dateLabel.trim()) errors.push("Add the event date as it should read in print.");
+  if (!input.startsAt.trim()) errors.push("Pick when the event starts.");
   if (!input.endsAt.trim()) {
     errors.push("Pick when the event ends, so the site knows when to take it down.");
   } else if (
@@ -173,6 +190,7 @@ export function duplicateTransform(source: EventInput): EventInput {
   return {
     ...source,
     dateLabel: "",
+    startsAt: "",
     endsAt: "",
     bannerText: "",
     sessions: source.sessions.map((s) => ({ ...s, id: null })),

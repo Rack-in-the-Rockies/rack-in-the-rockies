@@ -45,6 +45,7 @@ const complete: EventInput = {
   title: "Mahjong in Bloom",
   partner: "Tee Lee Floral",
   dateLabel: "July 28, 2026",
+  startsAt: "2026-07-28T16:45:00-06:00",
   endsAt: "2026-07-28T20:00:00-06:00",
   location: "Olde Town Arvada",
   blurb: "An evening of tiles and blooms.",
@@ -117,6 +118,27 @@ describe("validateEventInput", () => {
     );
     expect(errors.length).toBeGreaterThanOrEqual(5);
   });
+  it("publishing requires a start time", () => {
+    const errors = validateEventInput(
+      { ...complete, startsAt: "", endsAt: "2099-10-01T20:00:00-06:00" },
+      { forPublish: true, now }
+    );
+    expect(errors).toEqual(["Pick when the event starts."]);
+    expect(
+      validateEventInput({ ...complete, startsAt: "" }, { forPublish: false })
+    ).toEqual([]);
+  });
+  it("the end must come after the start, and the start must be readable", () => {
+    expect(
+      validateEventInput(
+        { ...complete, startsAt: "2026-07-28T21:00:00-06:00" },
+        { forPublish: false }
+      )
+    ).toEqual(["The event must end after it starts."]);
+    expect(
+      validateEventInput({ ...complete, startsAt: "nope" }, { forPublish: false }).length
+    ).toBe(1);
+  });
   it("publishing requires the end to be in the future", () => {
     const errors = validateEventInput(
       { ...complete, endsAt: "2026-07-28T20:00:00-06:00" },
@@ -127,7 +149,12 @@ describe("validateEventInput", () => {
   it("signup links must be web links, and session rows complete", () => {
     expect(
       validateEventInput(
-        { ...complete, endsAt: "2099-10-01T20:00:00-06:00", externalSignupUrl: "javascript:x" },
+        {
+          ...complete,
+          startsAt: "2099-10-01T16:00:00-06:00",
+          endsAt: "2099-10-01T20:00:00-06:00",
+          externalSignupUrl: "javascript:x",
+        },
         { forPublish: true, now }
       ).length
     ).toBe(1);
@@ -135,6 +162,7 @@ describe("validateEventInput", () => {
       validateEventInput(
         {
           ...complete,
+          startsAt: "2099-10-01T16:00:00-06:00",
           endsAt: "2099-10-01T20:00:00-06:00",
           externalSignupUrl: null,
           sessions: [{ name: "Intro", timeLabel: "", priceLabel: "", capacity: null }],
@@ -150,6 +178,7 @@ describe("duplicateTransform", () => {
     const dup = duplicateTransform(complete);
     expect(dup.title).toBe("Mahjong in Bloom");
     expect(dup.dateLabel).toBe("");
+    expect(dup.startsAt).toBe("");
     expect(dup.endsAt).toBe("");
     expect(dup.bannerText).toBe("");
     expect(dup.sessions).toEqual(complete.sessions);
