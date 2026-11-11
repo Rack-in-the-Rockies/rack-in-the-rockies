@@ -45,7 +45,7 @@ branch and opens a PR into `main`. Older PRs used `feat/*` and `fix/*` names
 | Branch | State |
 | --- | --- |
 | `main` | Trunk. Head `ad44630`, deployed to production, deployment Ready |
-| `claude/bold-fermi-ptacmj` | One commit ahead of `main` ("Fix type errors in test files", `d8f2f01`), **no open PR**. Either open one or delete it; nobody should build on it blind |
+| `claude/bold-fermi-ptacmj` | One commit ahead of `main` ("Fix type errors in test files", `d8f2f01`), in review as PR #16. Test files only; clears the 7 `tsc --noEmit` errors on `main` |
 | `claude/festive-noether-r9c67n` | The session branch that carried this doc update |
 
 Production deploys come from `main` only. The most recent production deploys are
@@ -193,8 +193,6 @@ exists (Shuffles for Snowshoes is live through 2027-01-21), and whether
   so `starts_at` is null. Nothing breaks on the site, but the next save of that
   event as published will be refused with "Pick when the event starts." Whoever
   edits it next should set Starts.
-- **`claude/bold-fermi-ptacmj`.** Unmerged commit, no PR. Decide whether to
-  open a PR or delete the branch.
 - **The site owner's onboarding.** Tyler was deliberately holding her admin
   invite until cleanup he had not yet enumerated. Worth asking whether that
   list still exists, since the Team page now makes the invite a one-click
@@ -332,8 +330,9 @@ and the Vercel connector: `npm test` passes 162 tests across 21 files and
 all `role = 'admin'`; two subscribers; zero sends and zero registrations; the
 two events and their fields described under "What is live now"; the
 `event-images` bucket is public with a 5 MB limit and jpeg, png, webp only; the
-latest production deployment (`ad44630`) is Ready; the remote branch list and
-that no PR is open.
+latest production deployment (`ad44630`) is Ready; the remote branch list; and
+that `npx tsc --noEmit` reports 7 errors on `main`, all in test files, and 0 on
+`claude/bold-fermi-ptacmj` (PR #16).
 
 Carried from session memory rather than re-verified: the Supabase and Resend
 configuration traps above, and the M7 normalization requirement.
