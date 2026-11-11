@@ -184,7 +184,7 @@ them. The checkboxes in the plan files are stale; this table is the real state.
 | --- | --- |
 | Phase 1 M1 to M5, Supabase project, link, env vars, closed signups, magic link template | **Done** |
 | Phase 1 M6, invite and promote admins | **Done.** Invites go through `/admin/team`, no SQL needed. Several `profiles` rows have `role = 'admin'` and sign-in works in production (verified from the live database 2026-11-11) |
-| Phase 1 M7, import the spreadsheet and old Resend audience | **Outstanding** |
+| Phase 1 M7, import the spreadsheet and old Resend audience | **Spreadsheet done** 2026-11-11: 124 people imported with `source = 'import'`, bringing the table to 126. The sheet's group columns became tags: `cricket`, `mojitos-and-mahjong`, `snowshoe`, `blue-bonnet`, `mahj-interested`, `mahjong-in-bloom`, `ritr`, `bookclub`. **Resend audience still outstanding.** No Resend broadcast was ever sent, so no contact there can be unsubscribed and import order does not matter |
 | Phase 2 P1, mailing address | **Deferred** until the business has an address. Blocks real sends only |
 | Phase 2 P2, Resend webhook plus `RESEND_WEBHOOK_SECRET` | **Done.** The Resend webhook for `https://rackintherockies.com/api/webhooks/resend` is enabled for `email.bounced`, `email.complained`, and `email.delivered`. The secret is set in Vercel Production and Preview, and an unsigned request gets `401 Invalid signature` (verified 2026-11-11) |
 | Phase 2 P3, webhook test event returns 2xx | **Done, with real traffic.** Resend's log shows real `email.delivered` events from admin invite emails answered `200 {"received":true}` on the first attempt, so signature verification works end to end in production (verified 2026-11-11) |
@@ -208,9 +208,18 @@ exists (Shuffles for Snowshoes is live through 2027-01-21), and whether
   invite until cleanup he had not yet enumerated. Worth asking whether that
   list still exists, since the Team page now makes the invite a one-click
   action.
-- **M7 normalization.** Dashboard CSV imports bypass `lib/subscribers.ts`, so
-  the CSV must be lowercased, trimmed, and deduped *before* upload or the
-  unique index will reject rows and casing will leak in.
+- **How to finish M7 (the Resend audience).** Do not use the dashboard CSV
+  import the spec describes. The spreadsheet was imported instead with one
+  generated SQL statement, `insert ... on conflict (email) do nothing`, run via
+  `supabase db query --linked -f`, after a rehearsal inside `begin; ...;
+  rollback;`. That approach normalizes emails exactly like
+  `lib/subscriber-rules.ts`, merges duplicates, is all-or-nothing, and never
+  modifies an existing subscriber, so it cannot resurrect anyone who
+  unsubscribed. The dashboard import does none of those things and aborts on
+  the first collision. Carry Resend's `unsubscribed` flag over as
+  `status = 'unsubscribed'` and use `source = 'resend-migration'`. Keep the
+  export and any generated SQL out of the repo: it is public and they contain
+  customers' names and emails.
 - **`RESEND_AUDIENCE_ID` is legacy.** Unused by code since the Phase 1
   migration. It is the export source for M7, so remove it from Vercel only
   after that import is done.
