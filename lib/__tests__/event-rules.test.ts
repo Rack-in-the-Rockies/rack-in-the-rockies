@@ -10,7 +10,9 @@ import {
 
 const now = new Date("2026-08-01T12:00:00-06:00");
 
-function row(overrides: Record<string, unknown>) {
+type FeaturedRow = { id: string; status: string; ends_at: string | null };
+
+function row(overrides: Partial<FeaturedRow> & { id: string }): FeaturedRow {
   return { status: "published", ends_at: "2026-09-01T20:00:00-06:00", ...overrides };
 }
 
@@ -165,7 +167,7 @@ describe("validateEventInput", () => {
           startsAt: "2099-10-01T16:00:00-06:00",
           endsAt: "2099-10-01T20:00:00-06:00",
           externalSignupUrl: null,
-          sessions: [{ name: "Intro", timeLabel: "", priceLabel: "", capacity: null }],
+          sessions: [{ id: null, name: "Intro", timeLabel: "", priceLabel: "", capacity: null }],
         },
         { forPublish: true, now }
       ).length

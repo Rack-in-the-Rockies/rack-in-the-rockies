@@ -7,6 +7,7 @@ import {
   type SendRecipient,
   type OutgoingEmail,
   type SendRowState,
+  type EmailSender,
 } from "@/lib/sends";
 import type { Announcement } from "@/lib/send-rules";
 
@@ -96,8 +97,8 @@ function members(n: number) {
 }
 
 const okSender = () =>
-  vi.fn(async (emails: OutgoingEmail[]) => ({
-    ok: true as const,
+  vi.fn<EmailSender["sendBatch"]>(async (emails) => ({
+    ok: true,
     ids: emails.map((e, i) => `re-${e.to}-${i}`),
   }));
 
