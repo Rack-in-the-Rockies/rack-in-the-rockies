@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderAnnouncement } from "@/emails/render";
 import type { Announcement } from "@/lib/send-rules";
+import { emailStyleForEvent } from "@/lib/email-style";
 
 const event: Announcement = {
   template: "event-announcement",
@@ -61,5 +62,17 @@ describe("renderAnnouncement", () => {
       const { text } = await renderAnnouncement(a, opts);
       expect(text).not.toMatch(/[–—]/);
     }
+  });
+
+  it("applies an event's email style to the shell and the template", async () => {
+    const style = emailStyleForEvent({ decor: "winter", theme: null });
+    const { html } = await renderAnnouncement(
+      { ...event, fields: { ...event.fields, style } } as Announcement,
+      opts
+    );
+    expect(html).toContain(style.background);
+    expect(html).toContain(style.accent);
+    expect(html).toContain(style.dateIcon);
+    expect(html).not.toContain("#FF6B6B");
   });
 });

@@ -1,5 +1,6 @@
 import { listTags, countAudience } from "@/lib/subscribers";
 import { getFeaturedEvent } from "@/lib/events";
+import { emailStyleForEvent } from "@/lib/email-style";
 import { BUSINESS_MAILING_ADDRESS } from "@/lib/business";
 import { Composer } from "@/app/admin/(gated)/compose/composer";
 
@@ -31,6 +32,7 @@ export default async function ComposePage() {
                 })),
                 ctaUrl: featured.external_signup_url ?? "",
                 preheader: featured.banner_text,
+                style: emailStyleForEvent(featured),
               }
             : null
         }

@@ -9,6 +9,7 @@ import {
   testSendAction,
 } from "@/app/admin/(gated)/compose/actions";
 import type { TemplateKey } from "@/lib/send-rules";
+import type { EmailStyle } from "@/lib/email-style";
 
 type Prefill = {
   headline: string;
@@ -18,6 +19,7 @@ type Prefill = {
   sessions: { name: string; time: string; price: string }[];
   ctaUrl: string;
   preheader: string;
+  style: EmailStyle;
 };
 
 type SessionRow = { name: string; time: string; price: string };
@@ -51,6 +53,7 @@ export function Composer({
     closingNote: "",
   });
   const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const [style, setStyle] = useState<EmailStyle | null>(null);
   const [update, setUpdate] = useState({
     subject: "",
     preheader: "",
@@ -69,9 +72,9 @@ export function Composer({
 
   const payload = useCallback(() => {
     return template === "event-announcement"
-      ? { template, fields: { ...event, sessions } }
+      ? { template, fields: { ...event, sessions, style: style ?? undefined } }
       : { template, fields: update };
-  }, [template, event, sessions, update]);
+  }, [template, event, sessions, style, update]);
 
   // Debounced live preview.
   useEffect(() => {
@@ -108,6 +111,7 @@ export function Composer({
       ctaUrl: prefill.ctaUrl,
     }));
     setSessions(prefill.sessions);
+    setStyle(prefill.style);
   }
 
   function handleTest() {
@@ -178,6 +182,30 @@ export function Composer({
 
         {template === "event-announcement" ? (
           <div className="space-y-3">
+            {style && (
+              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-coral/10 bg-white px-3 py-2 text-xs text-text-mid">
+                <span className="flex gap-1" aria-hidden="true">
+                  {[style.headerFrom, style.accent, style.background, style.ink].map((c, i) => (
+                    <span
+                      key={i}
+                      className="inline-block h-3.5 w-3.5 rounded-full border border-black/10"
+                      style={{ backgroundColor: c }}
+                    />
+                  ))}
+                </span>
+                <span>
+                  Design: <span className="font-semibold text-text-dark">{style.name}</span>, from the
+                  featured event
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStyle(null)}
+                  className="ml-auto text-text-mid underline hover:no-underline"
+                >
+                  Use the standard look
+                </button>
+              </div>
+            )}
             <div>
               <label className={labelCls}>Subject line</label>
               <input
