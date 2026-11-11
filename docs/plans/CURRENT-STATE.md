@@ -171,6 +171,14 @@ layout check only protects rendering; actions are directly invokable by POST.
 Role comes from `public.profiles.role`, never `user_metadata`, which is
 user-editable.
 
+**Never send a file upload through a server action.** Next.js caps server
+action request bodies at 1 MB by default, so ordinary phone photos fail. This
+broke event image upload until PR #13. Follow `createEventImageUploadAction` in
+`app/admin/(gated)/events/actions.ts`: the action checks the admin, validates
+type and size, and returns a signed upload URL; the browser then uploads straight
+to Supabase Storage with `lib/supabase/browser.ts`. The `event-images` bucket
+enforces the same 5 MB, jpeg/png/webp limits.
+
 **`SUPABASE_SECRET_KEY` must never be `NEXT_PUBLIC_` prefixed.** RLS is enabled
 with no policies for `anon` or `authenticated`, so all access runs server-side
 through the secret key.
