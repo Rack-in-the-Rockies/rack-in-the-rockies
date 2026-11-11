@@ -26,9 +26,6 @@ function memoryDb(seed: SubscriberRow[] = []) {
         id: `id-${rows.length + 1}`,
         unsubscribe_token: `tok-${rows.length + 1}`,
         status: "subscribed",
-        tags: [],
-        first_name: null,
-        last_name: null,
         ...row,
       } as SubscriberRow);
     },
