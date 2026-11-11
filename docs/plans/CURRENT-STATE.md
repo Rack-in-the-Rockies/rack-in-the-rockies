@@ -86,6 +86,17 @@ The send pipeline has never run: the live database has 0 rows in `sends` and 0
 in `send_recipients` (verified 2026-11-11). This is Phase 1's M8 and Phase 2's
 P1.
 
+**Do not fill the constant with a stand-in.** It does two jobs: it is the footer
+text, and its being non-null is the switch that unlocks real sends (the server
+gate in `sendAction` and the composer's red "Real sends are blocked" warning
+both read it). A city and state such as "Denver, Colorado" would therefore turn
+on real sending while still failing CAN-SPAM, which needs a street address, a
+USPS-registered PO box, or a private mailbox at a registered mail-receiving
+agency. A cosmetic alternative, falling back to `BUSINESS_LOCATION` in the
+footer while keeping the constant null, was considered on 2026-11-11 and
+declined: only admins ever see test-send footers, and the placeholder doubles
+as a reminder. Leave it null until Tyler confirms the real address.
+
 ## Outstanding manual steps
 
 These need dashboard access or a decision, so a coding session cannot clear
