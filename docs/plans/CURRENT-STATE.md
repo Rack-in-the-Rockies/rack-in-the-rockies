@@ -4,7 +4,9 @@ Last updated: 2026-11-11
 
 Orientation doc for a cold session (including Claude Code on the web) picking up
 this repo with no prior context. Derived from repo contents, git history, a
-passing test, lint, and build run, and the notes carried in session memory.
+passing test, lint, and build run, the live Supabase project and Vercel
+deployments (read through their connectors), and the notes carried in session
+memory.
 Anything not verifiable that way is marked **unverified**.
 
 ## What this project is
@@ -36,6 +38,21 @@ after verifying each was fully merged. Expect `main` plus only genuinely active
 branches. If you find a `claude/*` branch, check for an open PR before assuming
 it is junk.
 
+Each Claude Code session develops on its own `claude/<adjective>-<name>-<suffix>`
+branch and opens a PR into `main`. Older PRs used `feat/*` and `fix/*` names
+(PRs #3 to #9). Remote branches as of the evening of 2026-11-11:
+
+| Branch | State |
+| --- | --- |
+| `main` | Trunk. Head `ad44630`, deployed to production, deployment Ready |
+| `claude/bold-fermi-ptacmj` | One commit ahead of `main` ("Fix type errors in test files", `d8f2f01`), in review as PR #16. Test files only; clears the 7 `tsc --noEmit` errors on `main` |
+| `claude/festive-noether-r9c67n` | The session branch that carried this doc update |
+
+Production deploys come from `main` only. The most recent production deploys are
+PR #12 (close-out skill), PR #13 (event uploads and start time), PR #14 (admin
+login hint), and the direct-to-main commits `3f470a1` (this doc's rewrite) and
+`ad44630` (send-pipeline state, migration rename).
+
 ## What is shipped
 
 Four phases are built, merged, and live. Specs and plans are in
@@ -46,12 +63,73 @@ works the way it does.
 | --- | --- | --- |
 | 1, subscriber management | Subscribers table, consent notices, unsubscribe and resubscribe, role-gated `/admin` | [spec](../superpowers/specs/2026-07-30-subscriber-management-phase-1-design.md), [plan](../superpowers/plans/2026-07-30-subscriber-management-phase-1.md) |
 | 2, announcement sending | Composer, React Email templates, batched send pipeline, send history, Resend webhooks | [spec](../superpowers/specs/2026-07-30-announcement-sending-phase-2-design.md), [plan](../superpowers/plans/2026-07-30-announcement-sending-phase-2.md) |
-| 3A, event builder | Events and sessions in Postgres, admin editor with live preview, image upload, themes | [spec](../superpowers/specs/2026-07-31-event-builder-and-registration-phase-3-design.md), [plan](../superpowers/plans/2026-07-31-event-builder-phase-3a.md) |
-| 3B, registration | Public registration form, capacity, confirmation email, cancel page, registrant CSV | [plan](../superpowers/plans/2026-07-31-event-registration-phase-3b.md) |
+| 3A, event builder | Events and sessions in Postgres, admin editor with live preview, featured event derived from the database | [spec](../superpowers/specs/2026-07-31-event-builder-and-registration-phase-3-design.md), [plan](../superpowers/plans/2026-07-31-event-builder-phase-3a.md) |
+| 3B, registration | Public registration form, capacity, confirmation email, cancel page, registrant CSV, hero art, `event-images` storage bucket | [plan](../superpowers/plans/2026-07-31-event-registration-phase-3b.md) |
 
 Since then: an admin Team page
 ([spec](../superpowers/specs/2026-08-01-admin-team-page-design.md)), a "Design
-with AI" banner designer, winter event theming, and shop additions.
+with AI" banner designer, winter event theming, shop additions, and the November
+event editor fix (PR #13). The event pieces are detailed below.
+
+### Events, from static file to database
+
+The featured event used to live in `data/featured-event.ts`. That file is gone.
+Events are now rows in Postgres, managed by admins at `/admin/events`
+(`app/admin/(gated)/events/`), and every public surface reads them through
+`getFeaturedEvent()` in `lib/events.ts`.
+
+- **Phase 3A (PR #4, 2026-07-31).** `public.events` and `public.event_sessions`
+  (migration `20260731234735_events_phase_3a.sql`). Events are `draft` or
+  `published`. The featured event is derived, never flagged: the earliest-ending
+  published event whose `ends_at` is still in the future
+  (`selectFeaturedEvent` in `lib/event-rules.ts`, mirrored by the query in
+  `getFeaturedEvent()`). That lookup fails soft and renders no event on a
+  database error. Saving a live event calls `revalidatePath("/", "layout")`;
+  public pages otherwise revalidate hourly. Drafts save permissively, publishing
+  runs the full `validateEventInput` checks.
+- **Phase 3B (PR #5, 2026-07-31).** `public.event_registrations` (migration
+  `20260801001927_registration_phase_3b.sql`), plus `events.image_url` and
+  `image_alt`, a new `event-registration` subscriber source, and the public-read
+  `event-images` storage bucket. Registration is a form on `/events`
+  (`components/registration-form.tsx`, `app/api/register/`), 1 to 4 seats,
+  capacity checked per session, confirmation email with a tokenized cancel link
+  (`app/cancel-registration/`), and a registrants CSV per event. The form only
+  shows when the featured event has sessions and no `external_signup_url`.
+  Capacity is check-then-insert and can oversell under a race; the spec accepts
+  that. No payments: the confirmation carries `payment_instructions`.
+- **Event decor (PRs #6 and #10).** `events.decor` picks the hero art when there
+  is no uploaded image: `mountains` (default), `blooms` (Mahjong in Bloom's
+  flowers, migration `20260801012715_event_decor.sql`), and `winter` (icy blue
+  palette, snowflake, mitten, and teacup tiles, a blue registration form,
+  migration `20261028231912_event_decor_winter.sql`). Components are
+  `components/event-hero-{default,bloom,winter}-decor.tsx`.
+- **Design with AI (PR #11, 2026-10-28).** An editor panel sends the admin's
+  description to Claude (`lib/theme-designer.ts`) and gets back a design recipe:
+  palette, accent font, tile layout, and vector tile icons. `lib/event-theme.ts`
+  sanitizes it on save and on read (hex colors only, geometry-only shapes,
+  WCAG contrast enforced). Stored in `events.theme` (jsonb) and
+  `events.theme_prompt`; a theme overrides `decor`, and an uploaded image still
+  replaces the tile art. Rendered by `components/event-hero-custom-decor.tsx`
+  through `--ev-*` CSS variables. Needs `ANTHROPIC_API_KEY`; setup and cost are
+  in `docs/ai-event-designer.md`. The editor pages set `maxDuration = 180`.
+- **November fix (PR #13, 2026-11-02).** Two problems. First, image uploads went
+  through a server action, which caps request bodies at 1 MB, so most photos
+  failed. `createEventImageUploadAction` now only validates type and size and
+  returns a one-time signed upload URL; the browser uploads straight to Supabase
+  Storage with `uploadToSignedUrl`. The bucket itself now enforces 5 MB and
+  jpeg, png, or webp. Second, events gained `starts_at` (migration
+  `20261102222514_event_starts_at.sql`) with a Starts picker beside Ends.
+  Publishing requires it, the end must come after the start, and picking a
+  start pre-fills `date_label` and a default end three hours later.
+  `date_label` stays free text for how the date reads in print.
+
+**What is live now** (live database, 2026-11-11): two published events.
+Mahjong in Bloom ended 2026-07-28 and stays in the admin list as history.
+**Shuffles for Snowshoes** is the featured event: `winter` decor, ends
+2027-01-21 at 7:49 PM Mountain, uses an external sign-up link, and has no
+sessions, so the site shows the external link rather than the registration
+form. No `event_registrations` rows exist yet, and no event has a `theme` or
+uploaded image.
 
 Code map:
 
@@ -59,7 +137,7 @@ Code map:
 | --- | --- |
 | Subscribers | `lib/subscribers.ts`, `lib/subscriber-rules.ts`, `app/api/subscribe/`, `app/api/unsubscribe/`, `app/unsubscribe/`, `app/resubscribe/` |
 | Sending | `lib/sends.ts`, `lib/send-rules.ts`, `emails/`, `app/admin/(gated)/compose/`, `app/admin/(gated)/sends/`, `app/api/webhooks/resend/` |
-| Events | `lib/events.ts`, `lib/event-rules.ts`, `lib/event-theme.ts`, `app/admin/(gated)/events/`, `components/event-hero-*-decor.tsx` |
+| Events | `lib/events.ts`, `lib/event-rules.ts`, `lib/event-theme.ts`, `app/admin/(gated)/events/`, `components/featured-event-hero.tsx`, `components/event-announcement-bar.tsx`, `components/event-hero-*-decor.tsx` |
 | Registration | `lib/registrations.ts`, `lib/registration-rules.ts`, `app/api/register/`, `app/cancel-registration/`, `app/admin/events/[id]/registrants.csv/` |
 | Admin and auth | `lib/auth.ts`, `lib/team.ts`, `lib/team-rules.ts`, `proxy.ts`, `app/admin/login/`, `app/auth/confirm/`, `app/admin/(gated)/team/` |
 | AI designer | `lib/theme-designer.ts`, `docs/ai-event-designer.md` |
@@ -116,7 +194,16 @@ them. The checkboxes in the plan files are stale; this table is the real state.
 
 ## Open decisions
 
+Re-checked 2026-11-11. Resolved since July and dropped: the two admin addresses
+(M6 is done, four `profiles` rows are admins), whether a next featured event
+exists (Shuffles for Snowshoes is live through 2027-01-21), and whether
+`ANTHROPIC_API_KEY` is set in production (it is, see Verification notes).
+
 - **The full mailing address (P1).** Deferred until the business has one.
+- **Shuffles for Snowshoes has no start time.** It was published before PR #13,
+  so `starts_at` is null. Nothing breaks on the site, but the next save of that
+  event as published will be refused with "Pick when the event starts." Whoever
+  edits it next should set Starts.
 - **The site owner's onboarding.** Tyler was deliberately holding her admin
   invite until cleanup he had not yet enumerated. Worth asking whether that
   list still exists, since the Team page now makes the invite a one-click
@@ -142,6 +229,17 @@ middleware, or auth code. Routing middleware is a root `proxy.ts`, not
 already enforced repo-wide once in commit `7386c6a`. It covers page text,
 button labels, metadata descriptions, and data files. Time ranges use a plain
 hyphen: `4:45 - 8:00 PM`.
+
+**Never send a file upload through a server action.** Next.js server actions
+cap request bodies at 1 MB by default, and a larger body fails before your code
+runs. That is what broke event photo uploads until PR #13. Use the pattern in
+`createEventImageUploadAction` (`app/admin/(gated)/events/actions.ts`): the
+action calls `requireAdmin()`, validates the file's type and size, and returns a
+one-time signed upload URL from `createSignedUploadUrl`; the browser then
+uploads straight to Supabase Storage with `uploadToSignedUrl`
+(`app/admin/(gated)/events/event-editor.tsx`). Enforce the same limits on the
+bucket, as `20261102222514_event_starts_at.sql` does for `event-images`. Do not
+raise `serverActions.bodySizeLimit` instead.
 
 **Two different things are called "events".** `data/events.ts` is a static
 catalog of what the business offers (private parties, lessons, charity) used for
@@ -242,6 +340,16 @@ and migration list; `BUSINESS_MAILING_ADDRESS` is `null` on `main`; the webhook
 route exists and reads `RESEND_WEBHOOK_SECRET`; `data/featured-event.ts` is
 gone while `data/events.ts` remains in use; `npm test` passes 162 tests across
 21 files; `npm run lint` is clean; `npm run build` succeeds.
+
+Verified again later on 2026-11-11 from a fresh clone, the Supabase connector,
+and the Vercel connector: `npm test` passes 162 tests across 21 files and
+`npm run lint` is clean; all 8 migrations are applied to the hosted project; four `profiles` rows,
+all `role = 'admin'`; two subscribers; zero sends and zero registrations; the
+two events and their fields described under "What is live now"; the
+`event-images` bucket is public with a 5 MB limit and jpeg, png, webp only; the
+latest production deployment (`ad44630`) is Ready; the remote branch list; and
+that `npx tsc --noEmit` reports 7 errors on `main`, all in test files, and 0 on
+`claude/bold-fermi-ptacmj` (PR #16).
 
 Carried from session memory rather than re-verified: the Supabase and Resend
 configuration traps above, and the M7 normalization requirement.
