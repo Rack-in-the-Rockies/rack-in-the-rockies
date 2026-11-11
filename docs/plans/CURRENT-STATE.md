@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-07-30
+Last updated: 2026-07-30 (admin access sections refreshed 2026-11-11)
 
 Orientation doc for a cold session (including Claude Code on the web) picking up
 this repo with no prior context. Everything here is derived from repo contents,
@@ -68,6 +68,7 @@ What exists:
 | Public endpoint | `app/api/subscribe/route.ts`, honeypot and rate limit |
 | Subscriber pages | `app/unsubscribe/`, `app/resubscribe/` |
 | Admin | `app/admin/(gated)/`, `app/admin/login/`, `app/admin/actions.ts` |
+| Admin team | `app/admin/(gated)/team/`, `lib/team.ts`, `lib/team-rules.ts` |
 | Compliance | `app/terms/`, `app/privacy/`, `lib/business.ts`, `lib/consent.ts` |
 | Forms | `components/consent-notice.tsx`, all four forms route through `subscribe()` |
 
@@ -86,7 +87,7 @@ behind several of them is done. Actual state:
 | M3 env vars | **Done.** `.env.local` exists, and all three Supabase vars are in Vercel Production |
 | M4 close signups | **Done as code**, `enable_signup = false` under `[auth]` |
 | M5 magic link template | **Done as code**, `site_url` plus `[auth.email.template.magic_link]` |
-| M6 invite and promote admins | **Outstanding**, and the last thing blocking admin access |
+| M6 invite and promote admins | **Done.** Admins are invited from `/admin/team` (verified 2026-11-11) |
 | M7 import existing lists | **Outstanding** |
 | M8 mailing address | **Outstanding**, not a Phase 1 blocker |
 
@@ -95,11 +96,10 @@ is better but means they only take effect where that config has been applied.
 Whether it has been pushed to the remote project is **unverified**: nothing in
 the repo records a successful config push.
 
-**Next step: M6.** Invite the two admin users, then promote them with the SQL in
-the plan. `requireAdmin()` checks `public.profiles.role = 'admin'`, so until a
-row says `admin`, `/admin` redirects to the login page for everyone, including a
-successfully authenticated user. The footer now links to `/admin`, so this is
-publicly reachable and worth closing out promptly.
+**Admin access (updated 2026-11-11).** M6 is done. Admins are invited from the
+Team page at `/admin/team`, which sends the Supabase invite and grants the
+`admin` role in one step (`inviteAdmin` in `lib/team.ts`). No SQL is needed. See
+the "Admin login never creates accounts" gotcha below for how sign-in behaves.
 
 **Do not start Phase 2.** It gets its own spec once Phase 1 is settled.
 
@@ -118,8 +118,6 @@ is correct and needs nothing.
 
 ## Open decisions
 
-- **The two admin addresses (M6).** Presumed Tyler and the site owner,
-  **unverified**. Needed to finish admin access.
 - **The full business mailing address (M8).** `lib/business.ts` ships
   `BUSINESS_LOCATION = "Denver, Colorado"`, fine for the website but not
   sufficient for CAN-SPAM footers once Phase 2 sends.
@@ -180,6 +178,23 @@ Phase 1 was merged but Supabase was not yet configured. Preserve it.
 `.temp/`, which is where the project ref lives. `.env.local.example` holds
 `xxxx` placeholders only.
 
+**Admin login never creates accounts.** `/admin/login` calls `signInWithOtp`
+with `shouldCreateUser: false`, so an address with no account gets no email, and
+Supabase logs `422: Signups not allowed for otp`. The page still says "If that
+address has access, a link is on its way" on purpose, so it never reveals which
+emails have accounts. A hint under the form tells people to ask an admin for an
+invite. The fix for "I requested access but got no email" is always: an existing
+admin invites that exact address from `/admin/team`. If an invite link expires,
+the Team page cannot re-send it, because the address already has an account.
+Trying `/admin/login` for that address is the first thing to try, but it is
+**unverified**: Supabase may send its default "confirm signup" email (that
+template is not customized in `supabase/config.toml`) rather than the magic link.
+If that fails, delete the user in the Supabase dashboard and invite again.
+
+**End sessions with `/close-out`.** The project skill at
+`.claude/skills/close-out/SKILL.md` audits a session (git, PR, deploy,
+migrations, docs) and says whether it is safe to archive.
+
 ## Verification notes
 
 Verified 2026-07-30 from repo contents, git history, a passing `npm test` and
@@ -190,7 +205,9 @@ linked project ref, the three Supabase vars in Vercel Production, a Ready
 production deployment, the expired `endsAt`, and that `RESEND_AUDIENCE_ID` is
 unreferenced in code.
 
+Verified 2026-11-11 from the live database: several `profiles` rows have
+`role = 'admin'`, and admin sign-in works in production.
+
 Unverified: whether the `supabase/config.toml` auth settings have been pushed to
-the remote project, whether any `profiles` row yet has `role = 'admin'`, which
-two addresses are intended as admins, and the size and contents of the owner's
+the remote project, and the size and contents of the owner's
 spreadsheet list.

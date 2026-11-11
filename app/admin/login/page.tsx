@@ -50,6 +50,10 @@ export default async function AdminLoginPage({
         {error === "email" && (
           <p className="text-xs text-red-500 mt-2">Please enter a valid email.</p>
         )}
+        <p className="text-xs text-text-light mt-4">
+          No email? Admin access is by invite only. Ask an existing admin to invite
+          you from the Team page.
+        </p>
       </div>
     </main>
   );
