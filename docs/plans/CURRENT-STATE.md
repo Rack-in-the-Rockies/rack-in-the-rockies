@@ -97,8 +97,8 @@ them. The checkboxes in the plan files are stale; this table is the real state.
 | Phase 1 M6, invite and promote admins | **Done.** Invites go through `/admin/team`, no SQL needed. Several `profiles` rows have `role = 'admin'` and sign-in works in production (verified from the live database 2026-11-11) |
 | Phase 1 M7, import the spreadsheet and old Resend audience | **Outstanding** |
 | Phase 2 P1, mailing address | **Deferred** until the business has an address. Blocks real sends only |
-| Phase 2 P2, Resend webhook plus `RESEND_WEBHOOK_SECRET` | **Secret done.** Set in Vercel Production and Preview since late July, and the live endpoint answers an unsigned request with `401 Invalid signature` rather than `500 Not configured` (verified 2026-11-11). Whether the webhook entry exists in the Resend dashboard with the right three events is **unverified** |
-| Phase 2 P3, webhook test event returns 2xx | **Outstanding.** Doable now, independent of P1 |
+| Phase 2 P2, Resend webhook plus `RESEND_WEBHOOK_SECRET` | **Done.** The Resend webhook for `https://rackintherockies.com/api/webhooks/resend` is enabled for `email.bounced`, `email.complained`, and `email.delivered`. The secret is set in Vercel Production and Preview, and an unsigned request gets `401 Invalid signature` (verified 2026-11-11) |
+| Phase 2 P3, webhook test event returns 2xx | **Done, with real traffic.** Resend's log shows real `email.delivered` events from admin invite emails answered `200 {"received":true}` on the first attempt, so signature verification works end to end in production (verified 2026-11-11) |
 | Phase 2 P4, migrations applied | **Done.** All 8 local migrations match the remote history (verified 2026-11-11) |
 | Phase 2 P5, test send, Gmail render, one-click unsubscribe flips the row | **Render check doable now** via a test send. The unsubscribe-flip check is **blocked by P1**: test sends carry the token `test`, which matches no subscriber, so only a real send can exercise it |
 | Auth email templates pasted into the Supabase dashboard | **Unverified.** Free-tier projects cannot edit templates on the default mailer, which is why custom SMTP via Resend is configured |
@@ -177,6 +177,12 @@ Editing it rewrites the meaning of past consent.
 `app/api/contact/route.ts` sends the notification email first, then writes the
 subscriber inside its own `try/catch` that only logs. Preserve that ordering.
 
+**Auth emails hit the send webhook too.** Supabase auth email (magic links,
+invites) goes out through Resend SMTP, so its delivery events reach
+`/api/webhooks/resend` even though they belong to no send. The handler accepts
+them and returns 200. Expect them in the Resend webhook log; they are not a
+fault.
+
 **The Supabase connector records migrations under its own timestamp.** When a
 migration is applied through the connector instead of `supabase db push`, the
 remote history gets a different version than the local filename. The remote
@@ -233,7 +239,9 @@ Also verified 2026-11-11: `ANTHROPIC_API_KEY` and `RESEND_WEBHOOK_SECRET` are
 set in Vercel Production (`vercel env ls --environment production`); the
 webhook endpoint returns 401 to unsigned requests; all migrations are in sync.
 
-Unverified: whether the Resend dashboard webhook exists with the right events;
-whether the
+Also verified 2026-11-11 from the Resend dashboard: the webhook entry exists,
+is enabled for all three events, and has delivered real events successfully.
+
+Unverified: whether the
 `supabase/config.toml` auth settings and email templates have been pushed to
 the remote project; and the size and contents of the owner's spreadsheet list.
