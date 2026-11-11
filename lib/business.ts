@@ -6,7 +6,8 @@ export const BUSINESS_LOCATION = "Denver, Colorado";
 export const SITE_URL = "https://rackintherockies.com";
 /**
  * CAN-SPAM requires a physical mailing address in every announcement email.
- * While this is null, real sends are refused server-side (see lib/sends.ts)
+ * While this is null, real sends are refused server-side (see sendAction in
+ * app/admin/(gated)/compose/actions.ts)
  * and test sends render a visible placeholder. Manual step P1 in the Phase 2
  * plan: replace null with the full address string to unblock sending.
  */

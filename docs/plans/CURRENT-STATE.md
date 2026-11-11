@@ -44,13 +44,14 @@ branch and opens a PR into `main`. Older PRs used `feat/*` and `fix/*` names
 
 | Branch | State |
 | --- | --- |
-| `main` | Trunk. Head `3f470a1`, deployed to production, deployment Ready |
+| `main` | Trunk. Head `ad44630`, deployed to production, deployment Ready |
 | `claude/bold-fermi-ptacmj` | One commit ahead of `main` ("Fix type errors in test files", `d8f2f01`), **no open PR**. Either open one or delete it; nobody should build on it blind |
 | `claude/festive-noether-r9c67n` | The session branch that carried this doc update |
 
 Production deploys come from `main` only. The most recent production deploys are
 PR #12 (close-out skill), PR #13 (event uploads and start time), PR #14 (admin
-login hint), and the direct-to-main commit `3f470a1` (this doc's rewrite).
+login hint), and the direct-to-main commits `3f470a1` (this doc's rewrite) and
+`ad44630` (send-pipeline state, migration rename).
 
 ## What is shipped
 
@@ -148,16 +149,20 @@ Schema lives in `supabase/migrations/` (8 migrations, latest
 
 ## The one thing blocking the most value
 
-**`BUSINESS_MAILING_ADDRESS` in `lib/business.ts` is still `null`.**
+**`BUSINESS_MAILING_ADDRESS` in `lib/business.ts` is still `null`, and that is
+deliberate for now.** As of 2026-11-11 the business does not have a mailing
+address yet, so this is deferred, not forgotten. Do not prompt Tyler for it or
+invent a placeholder.
 
 CAN-SPAM requires a physical mailing address in every announcement email. While
-that constant is null, `lib/sends.ts` refuses real sends server-side and test
-sends render `[Mailing address not set]`. The Phase 2 plan calls this out as
-"the entire unblock for real sends."
+that constant is null, `sendAction` in `app/admin/(gated)/compose/actions.ts`
+refuses real sends. **Test sends are not blocked:** `testSendAction` in the same
+file sends to the logged-in admin, and the footer renders
+`[Mailing address not set]`.
 
-So the whole Phase 2 pipeline, built and merged in July, has never sent a real
-announcement. It is waiting on one string that only Tyler can supply, a street
-address or a PO Box. This is Phase 1's M8 and Phase 2's P1.
+The send pipeline has never run: the live database has 0 rows in `sends` and 0
+in `send_recipients` (verified 2026-11-11). This is Phase 1's M8 and Phase 2's
+P1.
 
 ## Outstanding manual steps
 
@@ -169,28 +174,27 @@ them. The checkboxes in the plan files are stale; this table is the real state.
 | Phase 1 M1 to M5, Supabase project, link, env vars, closed signups, magic link template | **Done** |
 | Phase 1 M6, invite and promote admins | **Done.** Invites go through `/admin/team`, no SQL needed. Several `profiles` rows have `role = 'admin'` and sign-in works in production (verified from the live database 2026-11-11) |
 | Phase 1 M7, import the spreadsheet and old Resend audience | **Outstanding** |
-| Phase 2 P1, mailing address | **Outstanding.** See above. Blocks all real sends |
-| Phase 2 P2, Resend webhook plus `RESEND_WEBHOOK_SECRET` | **Outstanding.** The route and its tests exist; whether the webhook and secret are configured is **unverified** |
-| Phase 2 P3, webhook test event returns 2xx | **Outstanding** |
-| Phase 2 P5, test send, Gmail render, one-click unsubscribe flips the row | **Outstanding** |
+| Phase 2 P1, mailing address | **Deferred** until the business has an address. Blocks real sends only |
+| Phase 2 P2, Resend webhook plus `RESEND_WEBHOOK_SECRET` | **Secret done.** Set in Vercel Production and Preview since late July, and the live endpoint answers an unsigned request with `401 Invalid signature` rather than `500 Not configured` (verified 2026-11-11). Whether the webhook entry exists in the Resend dashboard with the right three events is **unverified** |
+| Phase 2 P3, webhook test event returns 2xx | **Outstanding.** Doable now, independent of P1 |
+| Phase 2 P4, migrations applied | **Done.** All 8 local migrations match the remote history (verified 2026-11-11) |
+| Phase 2 P5, test send, Gmail render, one-click unsubscribe flips the row | **Render check doable now** via a test send. The unsubscribe-flip check is **blocked by P1**: test sends carry the token `test`, which matches no subscriber, so only a real send can exercise it |
 | Auth email templates pasted into the Supabase dashboard | **Unverified.** Free-tier projects cannot edit templates on the default mailer, which is why custom SMTP via Resend is configured |
 
 ## Open decisions
 
 Re-checked 2026-11-11. Resolved since July and dropped: the two admin addresses
-(M6 is done, four `profiles` rows are admins) and whether a next featured event
-exists (Shuffles for Snowshoes is live through 2027-01-21).
+(M6 is done, four `profiles` rows are admins), whether a next featured event
+exists (Shuffles for Snowshoes is live through 2027-01-21), and whether
+`ANTHROPIC_API_KEY` is set in production (it is, see Verification notes).
 
-- **The full mailing address (P1).** The single highest-value unblock. Still
-  `null` on `main`, and the live database has 0 rows in `public.sends`.
+- **The full mailing address (P1).** Deferred until the business has one.
 - **Shuffles for Snowshoes has no start time.** It was published before PR #13,
   so `starts_at` is null. Nothing breaks on the site, but the next save of that
   event as published will be refused with "Pick when the event starts." Whoever
   edits it next should set Starts.
 - **`claude/bold-fermi-ptacmj`.** Unmerged commit, no PR. Decide whether to
   open a PR or delete the branch.
-- **`ANTHROPIC_API_KEY` in production.** "Design with AI" throws a friendly
-  error without it. Whether it is set in Vercel is **unverified**.
 - **The site owner's onboarding.** Tyler was deliberately holding her admin
   invite until cleanup he had not yet enumerated. Worth asking whether that
   list still exists, since the Team page now makes the invite a one-click
@@ -227,14 +231,6 @@ uploads straight to Supabase Storage with `uploadToSignedUrl`
 (`app/admin/(gated)/events/event-editor.tsx`). Enforce the same limits on the
 bucket, as `20261102222514_event_starts_at.sql` does for `event-images`. Do not
 raise `serverActions.bodySizeLimit` instead.
-
-**Migration versions on the hosted project do not all match filenames.**
-Migrations applied through the Supabase connector are recorded under the time
-they ran. `20261028231912_event_decor_winter.sql` was renamed to match. The
-event theme file is still `20261029000000_event_theme.sql` but is recorded
-remotely as `20261028233120`; it uses `if not exists`, so a `supabase db push`
-re-running it is harmless. Run `supabase migration list` before pushing and
-expect that one mismatch.
 
 **Two different things are called "events".** `data/events.ts` is a static
 catalog of what the business offers (private parties, lessons, charity) used for
@@ -281,6 +277,14 @@ Editing it rewrites the meaning of past consent.
 `app/api/contact/route.ts` sends the notification email first, then writes the
 subscriber inside its own `try/catch` that only logs. Preserve that ordering.
 
+**The Supabase connector records migrations under its own timestamp.** When a
+migration is applied through the connector instead of `supabase db push`, the
+remote history gets a different version than the local filename. The remote
+version then has no local file, and `supabase db push` refuses to run until they
+match. Fix by renaming the local file to the remote version (commits `68f13a9`
+and the event_theme rename both did this). Check with
+`supabase migration list --linked`.
+
 **End sessions with `/close-out`.** The project skill at
 `.claude/skills/close-out/SKILL.md` audits git, PR, deploy, migrations, and docs
 and says whether the session is safe to archive.
@@ -324,20 +328,21 @@ gone while `data/events.ts` remains in use; `npm test` passes 162 tests across
 
 Verified again later on 2026-11-11 from a fresh clone, the Supabase connector,
 and the Vercel connector: `npm test` passes 162 tests across 21 files and
-`npm run lint` is clean; all 8 migrations are applied to the hosted project
-(with the theme version mismatch noted under Gotchas); four `profiles` rows,
+`npm run lint` is clean; all 8 migrations are applied to the hosted project; four `profiles` rows,
 all `role = 'admin'`; two subscribers; zero sends and zero registrations; the
 two events and their fields described under "What is live now"; the
 `event-images` bucket is public with a 5 MB limit and jpeg, png, webp only; the
-latest production deployment (`3f470a1`) is Ready; the remote branch list and
+latest production deployment (`ad44630`) is Ready; the remote branch list and
 that no PR is open.
 
 Carried from session memory rather than re-verified: the Supabase and Resend
 configuration traps above, and the M7 normalization requirement.
 
-Unverified: whether `RESEND_WEBHOOK_SECRET` and `ANTHROPIC_API_KEY` are set in
-Vercel (the CLI token was expired at the time of writing, and the Vercel
-connector was refused permission to list env vars, so run
-`vercel login` then `vercel env ls production`); whether the
+Also verified 2026-11-11: `ANTHROPIC_API_KEY` and `RESEND_WEBHOOK_SECRET` are
+set in Vercel Production (`vercel env ls --environment production`); the
+webhook endpoint returns 401 to unsigned requests; all migrations are in sync.
+
+Unverified: whether the Resend dashboard webhook exists with the right events;
+whether the
 `supabase/config.toml` auth settings and email templates have been pushed to
 the remote project; and the size and contents of the owner's spreadsheet list.
