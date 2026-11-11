@@ -1,213 +1,225 @@
 # Current State
 
-Last updated: 2026-07-30 (admin access sections refreshed 2026-11-11)
+Last updated: 2026-11-11
 
 Orientation doc for a cold session (including Claude Code on the web) picking up
-this repo with no prior context. Everything here is derived from repo contents,
-git history, and the Vercel CLI. Anything not verifiable that way is marked
-**unverified**.
+this repo with no prior context. Derived from repo contents, git history, a
+passing test, lint, and build run, and the notes carried in session memory.
+Anything not verifiable that way is marked **unverified**.
 
 ## What this project is
 
-`rack-in-the-rockies` is the marketing site for Rack in the Rockies, a Colorado
-mahjong events business. It is a Next.js app, not a Salesforce or backend
-project.
+`rack-in-the-rockies` is the site for Rack in the Rockies, a Colorado mahjong
+events business. It is a Next.js app that has grown a real back office: a
+subscriber list, an announcement email pipeline, an event builder, and
+in-house event registration.
 
 - Next.js 16.2.1, React 19.2.4, Tailwind CSS 4, TypeScript
-- Supabase (Postgres + Auth) for subscriber data, `@supabase/ssr`
-- Transactional email via Resend (`resend` 6.9.4)
-- Vitest for tests, `npm test`
-- App Router, all marketing pages server-rendered for SEO
-- Deployed on Vercel, project `rack-in-the-rockies` (link lives in the
-  gitignored `.vercel/`)
-- Content lives in typed modules under `data/`, not a CMS
+- Supabase (Postgres + Auth) for all application data, `@supabase/ssr`
+- Resend for transactional and announcement email, React Email for templates
+- `@anthropic-ai/sdk` + `zod` for the AI event banner designer
+- Vitest, `npm test`
+- Vercel, project `rack-in-the-rockies`, auto-deploys `main` to
+  rackintherockies.com
 
-Read `AGENTS.md` before writing code. Two rules there are load-bearing and are
-repeated in the gotchas section below.
+Read `AGENTS.md` before writing code. Its two rules are load-bearing and are
+repeated under Gotchas.
 
 ## Branch and deploy state
 
-**`main` is the only branch, locally and on `origin`.** There is no feature
-branch and no staging branch. Everything described in this doc is on `main` and
-deployed to production.
+`main` is the trunk and deploys straight to production. Work lands through
+GitHub PRs, not local merges. As of this writing 14 PRs have merged.
 
-`feat/newsletter-signup` carried all of Phase 1. It was merged into `main` on
-2026-07-30 (merge commit `b673b49`) and then deleted from both local and
-`origin`. `mahjong-in-bloom` was deleted the same day as a redundant duplicate.
-Both are noted only so a stale reference elsewhere does not send anyone hunting
-for a branch that is meant to be gone.
+On 2026-11-11 the repo was cleaned up: 9 stale local branches, 10 merged remote
+branches, and an abandoned worktree under `.claude/worktrees/` were all deleted
+after verifying each was fully merged. Expect `main` plus only genuinely active
+branches. If you find a `claude/*` branch, check for an open PR before assuming
+it is junk.
 
-That history matters for one practical reason: **older notes and commit messages
-refer to files "on the branch". Those paths are all on `main` now.**
+## What is shipped
 
-## Active workstreams
+Four phases are built, merged, and live. Specs and plans are in
+`docs/superpowers/`, and they remain the best explanation of *why* each piece
+works the way it does.
 
-### 1. Subscriber management, Phase 1: shipped, finishing setup
+| Phase | What it does | Driving docs |
+| --- | --- | --- |
+| 1, subscriber management | Subscribers table, consent notices, unsubscribe and resubscribe, role-gated `/admin` | [spec](../superpowers/specs/2026-07-30-subscriber-management-phase-1-design.md), [plan](../superpowers/plans/2026-07-30-subscriber-management-phase-1.md) |
+| 2, announcement sending | Composer, React Email templates, batched send pipeline, send history, Resend webhooks | [spec](../superpowers/specs/2026-07-30-announcement-sending-phase-2-design.md), [plan](../superpowers/plans/2026-07-30-announcement-sending-phase-2.md) |
+| 3A, event builder | Events and sessions in Postgres, admin editor with live preview, image upload, themes | [spec](../superpowers/specs/2026-07-31-event-builder-and-registration-phase-3-design.md), [plan](../superpowers/plans/2026-07-31-event-builder-phase-3a.md) |
+| 3B, registration | Public registration form, capacity, confirmation email, cancel page, registrant CSV | [plan](../superpowers/plans/2026-07-31-event-registration-phase-3b.md) |
 
-The dominant workstream. Both driving documents are on `main`:
+Since then: an admin Team page
+([spec](../superpowers/specs/2026-08-01-admin-team-page-design.md)), a "Design
+with AI" banner designer, winter event theming, and shop additions.
 
-- [`docs/superpowers/specs/2026-07-30-subscriber-management-phase-1-design.md`](../superpowers/specs/2026-07-30-subscriber-management-phase-1-design.md),
-  the design and the reasoning behind it
-- [`docs/superpowers/plans/2026-07-30-subscriber-management-phase-1.md`](../superpowers/plans/2026-07-30-subscriber-management-phase-1.md),
-  the task-by-task implementation plan and the M1 to M8 manual prerequisites
-
-**Code complete, merged, and live.** 34 tests pass across 4 files, `npm run
-lint` is clean, and the latest production deployment is Ready (all verified
-2026-07-30).
-
-What exists:
+Code map:
 
 | Area | Files |
 | --- | --- |
-| Schema | `supabase/migrations/20260730225236_subscriber_management_phase_1.sql`, `profiles` + `subscribers` + RLS |
-| Auth config | `supabase/config.toml`, `supabase/templates/magic-link.html` |
-| Pure logic | `lib/subscriber-rules.ts`, `lib/rate-limit.ts` |
-| Write path | `lib/subscribers.ts`, the single entry point every caller uses |
-| Supabase clients | `lib/supabase/{admin,server,proxy}.ts` |
-| Auth | `lib/auth.ts`, `proxy.ts`, `app/auth/confirm/route.ts` |
-| Public endpoint | `app/api/subscribe/route.ts`, honeypot and rate limit |
-| Subscriber pages | `app/unsubscribe/`, `app/resubscribe/` |
-| Admin | `app/admin/(gated)/`, `app/admin/login/`, `app/admin/actions.ts` |
-| Admin team | `app/admin/(gated)/team/`, `lib/team.ts`, `lib/team-rules.ts` |
+| Subscribers | `lib/subscribers.ts`, `lib/subscriber-rules.ts`, `app/api/subscribe/`, `app/api/unsubscribe/`, `app/unsubscribe/`, `app/resubscribe/` |
+| Sending | `lib/sends.ts`, `lib/send-rules.ts`, `emails/`, `app/admin/(gated)/compose/`, `app/admin/(gated)/sends/`, `app/api/webhooks/resend/` |
+| Events | `lib/events.ts`, `lib/event-rules.ts`, `lib/event-theme.ts`, `app/admin/(gated)/events/`, `components/event-hero-*-decor.tsx` |
+| Registration | `lib/registrations.ts`, `lib/registration-rules.ts`, `app/api/register/`, `app/cancel-registration/`, `app/admin/events/[id]/registrants.csv/` |
+| Admin and auth | `lib/auth.ts`, `lib/team.ts`, `lib/team-rules.ts`, `proxy.ts`, `app/admin/login/`, `app/auth/confirm/`, `app/admin/(gated)/team/` |
+| AI designer | `lib/theme-designer.ts`, `docs/ai-event-designer.md` |
 | Compliance | `app/terms/`, `app/privacy/`, `lib/business.ts`, `lib/consent.ts` |
-| Forms | `components/consent-notice.tsx`, all four forms route through `subscribe()` |
 
-Both problems the spec was written to fix are resolved in production: the Kit
-`REPLACE_ME` placeholder is gone (the signup component posts to
-`/api/subscribe`), and `resend.contacts.create` is gone from
-`app/api/contact/route.ts`.
+Schema lives in `supabase/migrations/` (8 migrations, latest
+`20261102222514_event_starts_at.sql`). Auth config is code in
+`supabase/config.toml` plus `supabase/templates/`.
 
-**Setup status.** The plan's checkboxes are all still unticked, but the work
-behind several of them is done. Actual state:
+## The one thing blocking the most value
+
+**`BUSINESS_MAILING_ADDRESS` in `lib/business.ts` is still `null`.**
+
+CAN-SPAM requires a physical mailing address in every announcement email. While
+that constant is null, `lib/sends.ts` refuses real sends server-side and test
+sends render `[Mailing address not set]`. The Phase 2 plan calls this out as
+"the entire unblock for real sends."
+
+So the whole Phase 2 pipeline, built and merged in July, has never sent a real
+announcement. It is waiting on one string that only Tyler can supply, a street
+address or a PO Box. This is Phase 1's M8 and Phase 2's P1.
+
+## Outstanding manual steps
+
+These need dashboard access or a decision, so a coding session cannot clear
+them. The checkboxes in the plan files are stale; this table is the real state.
 
 | Step | Status |
 | --- | --- |
-| M1 create project | **Done.** `supabase/.temp/` holds a project ref |
-| M2 link CLI | **Done.** `linked-project.json` present |
-| M3 env vars | **Done.** `.env.local` exists, and all three Supabase vars are in Vercel Production |
-| M4 close signups | **Done as code**, `enable_signup = false` under `[auth]` |
-| M5 magic link template | **Done as code**, `site_url` plus `[auth.email.template.magic_link]` |
-| M6 invite and promote admins | **Done.** Admins are invited from `/admin/team` (verified 2026-11-11) |
-| M7 import existing lists | **Outstanding** |
-| M8 mailing address | **Outstanding**, not a Phase 1 blocker |
-
-M4 and M5 were handled as config in the repo rather than dashboard clicks, which
-is better but means they only take effect where that config has been applied.
-Whether it has been pushed to the remote project is **unverified**: nothing in
-the repo records a successful config push.
-
-**Admin access (updated 2026-11-11).** M6 is done. Admins are invited from the
-Team page at `/admin/team`, which sends the Supabase invite and grants the
-`admin` role in one step (`inviteAdmin` in `lib/team.ts`). No SQL is needed. See
-the "Admin login never creates accounts" gotcha below for how sign-in behaves.
-
-**Do not start Phase 2.** It gets its own spec once Phase 1 is settled.
-
-### 2. Mahjong in Bloom event: shipped, now expired
-
-**Files:** `data/featured-event.ts`, `components/featured-event-hero.tsx`,
-`components/event-announcement-bar.tsx`
-
-Live. The hero and homepage announcement bar auto-hide after `endsAt` passes,
-and pages revalidate hourly.
-
-`endsAt` is `2026-07-28T20:00:00-06:00`, which is in the past, so **the site is
-currently showing no featured event.** If there is a next event, updating
-`data/featured-event.ts` is a one-file change. If there is not, the current state
-is correct and needs nothing.
+| Phase 1 M1 to M5, Supabase project, link, env vars, closed signups, magic link template | **Done** |
+| Phase 1 M6, invite and promote admins | **Done.** Invites go through `/admin/team`, no SQL needed. Several `profiles` rows have `role = 'admin'` and sign-in works in production (verified from the live database 2026-11-11) |
+| Phase 1 M7, import the spreadsheet and old Resend audience | **Outstanding** |
+| Phase 2 P1, mailing address | **Outstanding.** See above. Blocks all real sends |
+| Phase 2 P2, Resend webhook plus `RESEND_WEBHOOK_SECRET` | **Outstanding.** The route and its tests exist; whether the webhook and secret are configured is **unverified** |
+| Phase 2 P3, webhook test event returns 2xx | **Outstanding** |
+| Phase 2 P5, test send, Gmail render, one-click unsubscribe flips the row | **Outstanding** |
+| Auth email templates pasted into the Supabase dashboard | **Unverified.** Free-tier projects cannot edit templates on the default mailer, which is why custom SMTP via Resend is configured |
 
 ## Open decisions
 
-- **The full business mailing address (M8).** `lib/business.ts` ships
-  `BUSINESS_LOCATION = "Denver, Colorado"`, fine for the website but not
-  sufficient for CAN-SPAM footers once Phase 2 sends.
-- **Whether a next featured event exists.** See workstream 2.
-- **`RESEND_AUDIENCE_ID` is stale.** No longer read by any code, but still set in
-  Vercel Production. Safe to remove once the M7 export is done, since that
-  audience is the source for the `resend-migration` import.
+- **The full mailing address (P1).** The single highest-value unblock.
+- **`ANTHROPIC_API_KEY` in production.** "Design with AI" throws a friendly
+  error without it. Whether it is set in Vercel is **unverified**.
+- **The site owner's onboarding.** Tyler was deliberately holding her admin
+  invite until cleanup he had not yet enumerated. Worth asking whether that
+  list still exists, since the Team page now makes the invite a one-click
+  action.
+- **M7 normalization.** Dashboard CSV imports bypass `lib/subscribers.ts`, so
+  the CSV must be lowercased, trimmed, and deduped *before* upload or the
+  unique index will reject rows and casing will leak in.
+- **`RESEND_AUDIENCE_ID` is legacy.** Unused by code since the Phase 1
+  migration. It is the export source for M7, so remove it from Vercel only
+  after that import is done.
 
 ## Gotchas
 
 Things a cold session will get wrong without being told.
 
-**This is not the Next.js in your training data.** `AGENTS.md` says version
-16.2.1 has breaking changes to APIs, conventions, and file structure. Read the
-relevant guide in `node_modules/next/dist/docs/` before writing route handlers,
-middleware, or auth code. Note the repo has a root `proxy.ts`, not a
-`middleware.ts`, matched to `/admin/:path*` only. Do not write App Router APIs
-from memory.
+**This is not the Next.js in your training data.** `AGENTS.md` says 16.2.1 has
+breaking changes to APIs, conventions, and file structure. Read the relevant
+guide in `node_modules/next/dist/docs/` before writing route handlers,
+middleware, or auth code. Routing middleware is a root `proxy.ts`, not
+`middleware.ts`, matched to `/admin/:path*` only.
 
-**No em dashes or en dashes in user-facing copy, ever.** This is an `AGENTS.md`
-rule and it has already been enforced repo-wide once, in commit `7386c6a`. It
-covers page text, button labels, metadata descriptions, and data files. Time
-ranges use a plain hyphen: `4:45 - 8:00 PM`.
+**No em dashes or en dashes in user-facing copy, ever.** An `AGENTS.md` rule,
+already enforced repo-wide once in commit `7386c6a`. It covers page text,
+button labels, metadata descriptions, and data files. Time ranges use a plain
+hyphen: `4:45 - 8:00 PM`.
 
-**`lib/consent.ts` is an audit trail, not a constants file.** The design
-deliberately stores no `consent_text` or `consented_at` per subscriber. Instead
-the consent wording lives alone in that one module, and its git history is the
-record of what any given subscriber agreed to, paired with their `created_at`.
-Changing that file rewrites the meaning of past consent, so treat edits to it as
-a data decision and not a copy tweak.
+**Two different things are called "events".** `data/events.ts` is a static
+catalog of what the business offers (private parties, lessons, charity) used for
+marketing cards. `lib/events.ts` is the database-backed scheduled events with
+sessions, themes, and registration. `data/featured-event.ts` is gone; the
+featured event comes from `getFeaturedEvent()`.
+
+**Admin login never creates accounts.** `/admin/login` calls `signInWithOtp`
+with `shouldCreateUser: false`, so an address with no account gets no email and
+Supabase logs `422: Signups not allowed for otp`. The page still says "If that
+address has access, a link is on its way" on purpose, so it never reveals which
+emails have accounts. The fix for "I requested access but got no email" is
+always: an existing admin invites that exact address from `/admin/team`. If an
+invite link expires, the Team page cannot re-send it, because the address
+already has an account. Trying `/admin/login` is the first thing to attempt but
+is **unverified**; Supabase may send its default confirm-signup email instead of
+the magic link. Failing that, delete the user in the dashboard and re-invite.
+
+**Never flip `[auth.email] enable_signup` in `supabase/config.toml`.** It maps
+to the email *provider* toggle, not signups, and setting it false disables
+sign-in entirely (magic links return 422). To close signups while keeping
+login: `[auth] enable_signup = false` globally, plus `shouldCreateUser: false`
+in the app. There is a warning comment at that line.
+
+**`requireAdmin()` must be called inside every admin server action.** The
+layout check only protects rendering; actions are directly invokable by POST.
+Role comes from `public.profiles.role`, never `user_metadata`, which is
+user-editable.
 
 **`SUPABASE_SECRET_KEY` must never be `NEXT_PUBLIC_` prefixed.** RLS is enabled
 with no policies for `anon` or `authenticated`, so all access runs server-side
-through the secret key. Prefixing it would expose the whole subscriber table.
-
-**Admin authorization reads `public.profiles.role`, never `user_metadata`.**
-Supabase's `raw_user_meta_data` is user-editable. `app/admin/actions.ts`
-re-checks the role inside the server action rather than trusting the layout gate,
-because actions are directly invokable by POST.
+through the secret key.
 
 **Every subscriber write goes through `lib/subscribers.ts`.** No caller talks to
-Supabase directly. That is what keeps the resubscribe rules auditable in one
-place and the vendor choice reversible. Preserve it.
+Supabase directly. That keeps the resubscribe rules auditable in one place.
+`complained` is a hard stop that no client-supplied field can resurrect.
 
-**`complained` is a hard stop.** No client-supplied field can resurrect a
-complained address, and `source` is set server-side precisely so the resubscribe
-rules cannot be bypassed. The tests cover this. Do not relax it.
+**`lib/consent.ts` is an audit trail, not a constants file.** No per-subscriber
+`consent_text` is stored. The wording lives alone in that module and its git
+history, paired with a row's `created_at`, is the record of what was agreed to.
+Editing it rewrites the meaning of past consent.
 
 **The inquiry forms must never fail on a subscriber write.**
-`app/api/contact/route.ts` sends the notification email first, then does the
-subscriber write inside its own `try/catch` that only logs. That ordering is what
-kept contact, booking, and waitlist submissions working through the window when
-Phase 1 was merged but Supabase was not yet configured. Preserve it.
-
-**Secrets are not in the repo and should stay that way.** `.gitignore` covers
-`.env*` except `.env*.example`, plus `.vercel/`, `.next/`, `.DS_Store`.
-`supabase/.gitignore` additionally covers `.env.local`, `.env.keys`, and
-`.temp/`, which is where the project ref lives. `.env.local.example` holds
-`xxxx` placeholders only.
-
-**Admin login never creates accounts.** `/admin/login` calls `signInWithOtp`
-with `shouldCreateUser: false`, so an address with no account gets no email, and
-Supabase logs `422: Signups not allowed for otp`. The page still says "If that
-address has access, a link is on its way" on purpose, so it never reveals which
-emails have accounts. A hint under the form tells people to ask an admin for an
-invite. The fix for "I requested access but got no email" is always: an existing
-admin invites that exact address from `/admin/team`. If an invite link expires,
-the Team page cannot re-send it, because the address already has an account.
-Trying `/admin/login` for that address is the first thing to try, but it is
-**unverified**: Supabase may send its default "confirm signup" email (that
-template is not customized in `supabase/config.toml`) rather than the magic link.
-If that fails, delete the user in the Supabase dashboard and invite again.
+`app/api/contact/route.ts` sends the notification email first, then writes the
+subscriber inside its own `try/catch` that only logs. Preserve that ordering.
 
 **End sessions with `/close-out`.** The project skill at
-`.claude/skills/close-out/SKILL.md` audits a session (git, PR, deploy,
-migrations, docs) and says whether it is safe to archive.
+`.claude/skills/close-out/SKILL.md` audits git, PR, deploy, migrations, and docs
+and says whether the session is safe to archive.
+
+## Local setup traps
+
+Hit for real, each costing a debugging round.
+
+**Run `npm install` after pulling.** On 2026-11-11 a stale `node_modules` from
+July made 5 test files fail with "Cannot find package `@react-email/render`" and
+"`@anthropic-ai/sdk`", which look like code faults but are just a missing
+install.
+
+**Git worktrees are not Supabase-linked.** Run
+`supabase link --project-ref <ref>` inside a new worktree before `supabase db
+push`. The ref is in `.env.local` and `supabase/.temp/project-ref`.
+
+**A worktree under `.claude/worktrees/` poisons lint.** `eslint.config.mjs` does
+not ignore it, so a checkout living there gets linted too. On 2026-11-11 one
+produced 20,001 problems; removing the worktree brought lint back to clean. If
+lint output looks absurd, check `git worktree list` first.
+
+**Local Node breaks `supabase-js` scripts.** PATH prefers node@20, which has no
+native WebSocket. Use `/opt/homebrew/bin/node`, or plain `fetch` against
+PostgREST for one-off scripts. Vercel runs Node 24 and is unaffected.
+
+**`supabase projects api-keys` truncates the secret key.** It returns a masked
+value that fails with "Invalid API key". Pass `--reveal`.
+
+**Auth config deploys with `supabase config push`**, and the whole `[auth]`
+section applies atomically. Export `RESEND_API_KEY` first, since
+`config.toml` references it for SMTP.
 
 ## Verification notes
 
-Verified 2026-07-30 from repo contents, git history, a passing `npm test` and
-`npm run lint`, a clean `npm run build`, and `vercel env ls` plus `vercel ls`:
-the single-branch state, the file inventory above, the removal of the Kit
-placeholder and `resend.contacts.create`, the presence of `.env.local` and a
-linked project ref, the three Supabase vars in Vercel Production, a Ready
-production deployment, the expired `endsAt`, and that `RESEND_AUDIENCE_ID` is
-unreferenced in code.
+Verified 2026-11-11 in this repo: the branch and worktree state; the code map
+and migration list; `BUSINESS_MAILING_ADDRESS` is `null` on `main`; the webhook
+route exists and reads `RESEND_WEBHOOK_SECRET`; `data/featured-event.ts` is
+gone while `data/events.ts` remains in use; `npm test` passes 162 tests across
+21 files; `npm run lint` is clean; `npm run build` succeeds.
 
-Verified 2026-11-11 from the live database: several `profiles` rows have
-`role = 'admin'`, and admin sign-in works in production.
+Carried from session memory rather than re-verified: the Supabase and Resend
+configuration traps above, and the M7 normalization requirement.
 
-Unverified: whether the `supabase/config.toml` auth settings have been pushed to
-the remote project, and the size and contents of the owner's
-spreadsheet list.
+Unverified: whether `RESEND_WEBHOOK_SECRET` and `ANTHROPIC_API_KEY` are set in
+Vercel (the CLI token was expired at the time of writing, so run
+`vercel login` then `vercel env ls production`); whether the
+`supabase/config.toml` auth settings and email templates have been pushed to
+the remote project; and the size and contents of the owner's spreadsheet list.
