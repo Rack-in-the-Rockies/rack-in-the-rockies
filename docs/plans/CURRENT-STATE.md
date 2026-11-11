@@ -40,13 +40,17 @@ it is junk.
 
 Each Claude Code session develops on its own `claude/<adjective>-<name>-<suffix>`
 branch and opens a PR into `main`. Older PRs used `feat/*` and `fix/*` names
-(PRs #3 to #9). Remote branches as of the evening of 2026-11-11:
+(PRs #3 to #9). A session can only push to its own branch, so it cannot delete
+another session's branch from inside the sandbox: delete merged branches from
+the PR page on GitHub. Remote branches as of the evening of 2026-11-11:
 
 | Branch | State |
 | --- | --- |
-| `main` | Trunk. Head `ad44630`, deployed to production, deployment Ready |
-| `claude/bold-fermi-ptacmj` | One commit ahead of `main` ("Fix type errors in test files", `d8f2f01`), in review as PR #16. Test files only; clears the 7 `tsc --noEmit` errors on `main` |
-| `claude/festive-noether-r9c67n` | The session branch that carried this doc update |
+| `main` | Trunk. Head `cc30f8b` (PR #15), after PR #16 at `3be39eb` |
+| `claude/bold-fermi-ptacmj` | **Merged** as PR #16 (test type fixes). Safe to delete |
+| `claude/keen-davinci-oiw14l` | PR #13's branch plus one unmerged commit, `f76e6f7`, adding a server-action upload gotcha. **Superseded**: that gotcha landed on `main` through PR #15. Safe to delete; merging it would duplicate the section |
+| `claude/email-compose-event-styling-ec36e2` | **Active, no PR yet.** One commit, `157906b`, carrying the featured event's design into prefilled announcement emails |
+| `claude/festive-noether-r9c67n` | The session branch for this doc's updates (PRs #15 and the follow-up). Delete once the follow-up merges |
 
 Production deploys come from `main` only. The most recent production deploys are
 PR #12 (close-out skill), PR #13 (event uploads and start time), PR #14 (admin
@@ -356,9 +360,9 @@ and the Vercel connector: `npm test` passes 162 tests across 21 files and
 all `role = 'admin'`; two subscribers; zero sends and zero registrations; the
 two events and their fields described under "What is live now"; the
 `event-images` bucket is public with a 5 MB limit and jpeg, png, webp only; the
-latest production deployment (`ad44630`) is Ready; the remote branch list; and
-that `npx tsc --noEmit` reports 7 errors on `main`, all in test files, and 0 on
-`claude/bold-fermi-ptacmj` (PR #16).
+latest production deployment (`ad44630`) is Ready; and the remote branch list.
+After PR #16 merged, `npx tsc --noEmit` on `main` (`cc30f8b`) reports 0 errors,
+and `npm test` still passes 162 tests.
 
 Carried from session memory rather than re-verified: the Supabase and Resend
 configuration traps above, and the M7 normalization requirement.
