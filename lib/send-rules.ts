@@ -1,3 +1,5 @@
+import { parseEmailStyle, type EmailStyle } from "@/lib/email-style";
+
 export type TemplateKey = "event-announcement" | "general-update";
 
 export type EventSessionField = { name: string; time: string; price: string };
@@ -14,6 +16,8 @@ export type EventAnnouncementFields = {
   ctaLabel?: string;
   ctaUrl?: string;
   closingNote?: string;
+  /** Borrowed from an event's site design; absent means the default warm look. */
+  style?: EmailStyle;
 };
 
 export type GeneralUpdateFields = {
@@ -134,6 +138,7 @@ export function parseAnnouncement(input: unknown): Announcement | null {
         ctaLabel: str(f.ctaLabel) || undefined,
         ctaUrl: str(f.ctaUrl) || undefined,
         closingNote: str(f.closingNote) || undefined,
+        style: parseEmailStyle(f.style),
       },
     };
   }

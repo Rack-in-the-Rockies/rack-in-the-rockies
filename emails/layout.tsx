@@ -14,9 +14,9 @@ import {
   BUSINESS_NAME,
 } from "@/lib/business";
 import { emailTheme as t } from "@/emails/theme";
+import { WARM_EMAIL_STYLE, type EmailStyle } from "@/lib/email-style";
 
-const footerText = {
-  color: t.textLight,
+const footerBase = {
   fontSize: "12px",
   lineHeight: "18px",
   margin: "0 0 6px",
@@ -25,6 +25,7 @@ const footerText = {
 export function EmailShell({
   preheader,
   unsubscribeUrl,
+  style = WARM_EMAIL_STYLE,
   children,
 }: {
   preheader?: string;
@@ -34,26 +35,29 @@ export function EmailShell({
    * business-name footer instead.
    */
   unsubscribeUrl?: string;
+  /** Colors for the page, card, and header band. Defaults to the warm site palette. */
+  style?: EmailStyle;
   children: React.ReactNode;
 }) {
+  const footerText = { ...footerBase, color: style.muted };
   return (
     <Html lang="en">
       <Head />
       {preheader ? <Preview>{preheader}</Preview> : null}
-      <Body style={{ backgroundColor: t.cream, fontFamily: t.fontBody, margin: 0 }}>
+      <Body style={{ backgroundColor: style.background, fontFamily: t.fontBody, margin: 0 }}>
         <Container style={{ maxWidth: "560px", margin: "0 auto", padding: "24px 16px" }}>
           <Section
             style={{
-              backgroundColor: t.warmWhite,
+              backgroundColor: style.card,
               borderRadius: "16px",
-              border: `1px solid ${t.blush}`,
+              border: `1px solid ${style.border}`,
               overflow: "hidden",
             }}
           >
             <Section
               style={{
-                backgroundColor: t.coral,
-                background: `linear-gradient(90deg, ${t.coral}, ${t.tangerine})`,
+                backgroundColor: style.headerFrom,
+                background: `linear-gradient(90deg, ${style.headerFrom}, ${style.headerTo})`,
                 padding: "18px 32px",
               }}
             >
@@ -81,7 +85,7 @@ export function EmailShell({
                 <Text style={footerText}>
                   <Link
                     href={unsubscribeUrl}
-                    style={{ color: t.textMid, textDecoration: "underline" }}
+                    style={{ color: style.body, textDecoration: "underline" }}
                   >
                     Unsubscribe
                   </Link>

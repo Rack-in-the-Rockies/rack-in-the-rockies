@@ -1,9 +1,20 @@
 import { Button, Column, Row, Section, Text } from "@react-email/components";
 import { EmailShell } from "@/emails/layout";
 import { emailTheme as t } from "@/emails/theme";
+import { splitTitleAccent } from "@/lib/event-rules";
+import type { AccentFont } from "@/lib/event-theme";
 import type { EventAnnouncementFields } from "@/lib/send-rules";
 
-const body = { color: t.textMid, fontSize: "15px", lineHeight: "23px", margin: "0 0 16px" };
+/** Email-safe stand-ins for the site's headline accent treatments. */
+const ACCENT_FONT_STYLES: Record<AccentFont, React.CSSProperties> = {
+  script: {
+    fontFamily: "'Brush Script MT', 'Segoe Script', 'Apple Chancery', cursive",
+    fontSize: "32px",
+    fontWeight: 400,
+  },
+  "serif-italic": { fontStyle: "italic" },
+  "sans-bold": { fontFamily: t.fontBody, fontWeight: 800 },
+};
 
 export function EventAnnouncementEmail({
   fields,
@@ -12,12 +23,26 @@ export function EventAnnouncementEmail({
   fields: EventAnnouncementFields;
   unsubscribeUrl: string;
 }) {
+  const s = fields.style;
+  // Unstyled sends keep the original warm look exactly.
+  const c = {
+    ink: s?.ink ?? t.textDark,
+    body: s?.body ?? t.textMid,
+    muted: s?.muted ?? t.textLight,
+    dateLine: s?.accent ?? t.tangerine,
+    price: s?.accent ?? t.coral,
+    button: s?.accent ?? t.coral,
+    panel: s?.panel ?? t.cream,
+  };
+  const body = { color: c.body, fontSize: "15px", lineHeight: "23px", margin: "0 0 16px" };
   const when = [fields.dateLabel, fields.time].filter(Boolean).join(", ");
+  const { lead, accent } = s ? splitTitleAccent(fields.headline) : { lead: fields.headline, accent: "" };
+
   return (
-    <EmailShell preheader={fields.preheader} unsubscribeUrl={unsubscribeUrl}>
+    <EmailShell preheader={fields.preheader} unsubscribeUrl={unsubscribeUrl} style={s}>
       <Text
         style={{
-          color: t.textDark,
+          color: c.ink,
           fontFamily: t.fontDisplay,
           fontSize: "26px",
           fontWeight: 700,
@@ -25,9 +50,13 @@ export function EventAnnouncementEmail({
           margin: "0 0 6px",
         }}
       >
-        {fields.headline}
+        {lead}
+        {accent && s && (
+          <span style={{ color: s.accent, ...ACCENT_FONT_STYLES[s.accentFont] }}>{accent}</span>
+        )}
       </Text>
-      <Text style={{ color: t.tangerine, fontSize: "14px", fontWeight: 600, margin: "0 0 18px" }}>
+      <Text style={{ color: c.dateLine, fontSize: "14px", fontWeight: 600, margin: "0 0 18px" }}>
+        {s?.dateIcon ? `${s.dateIcon} ` : ""}
         {when} &middot; {fields.location}
       </Text>
       <Text style={body}>{fields.intro}</Text>
@@ -35,23 +64,24 @@ export function EventAnnouncementEmail({
       {fields.sessions.length > 0 && (
         <Section
           style={{
-            backgroundColor: t.cream,
+            backgroundColor: c.panel,
+            border: s ? `1px solid ${s.border}` : undefined,
             borderRadius: "12px",
             padding: "14px 18px",
             margin: "0 0 18px",
           }}
         >
-          {fields.sessions.map((s, i) => (
+          {fields.sessions.map((session, i) => (
             <Row key={i} style={{ marginBottom: i < fields.sessions.length - 1 ? "8px" : "0" }}>
               <Column>
-                <Text style={{ color: t.textDark, fontSize: "14px", fontWeight: 600, margin: 0 }}>
-                  {s.name}
+                <Text style={{ color: c.ink, fontSize: "14px", fontWeight: 600, margin: 0 }}>
+                  {session.name}
                 </Text>
-                <Text style={{ color: t.textLight, fontSize: "13px", margin: 0 }}>{s.time}</Text>
+                <Text style={{ color: c.muted, fontSize: "13px", margin: 0 }}>{session.time}</Text>
               </Column>
               <Column style={{ textAlign: "right" as const, verticalAlign: "top" }}>
-                <Text style={{ color: t.coral, fontSize: "14px", fontWeight: 700, margin: 0 }}>
-                  {s.price}
+                <Text style={{ color: c.price, fontSize: "14px", fontWeight: 700, margin: 0 }}>
+                  {session.price}
                 </Text>
               </Column>
             </Row>
@@ -64,7 +94,7 @@ export function EventAnnouncementEmail({
           <Button
             href={fields.ctaUrl}
             style={{
-              backgroundColor: t.coral,
+              backgroundColor: c.button,
               borderRadius: "28px",
               color: "#FFFFFF",
               fontSize: "15px",
