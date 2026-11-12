@@ -42,15 +42,16 @@ Each Claude Code session develops on its own `claude/<adjective>-<name>-<suffix>
 branch and opens a PR into `main`. Older PRs used `feat/*` and `fix/*` names
 (PRs #3 to #9). A session can only push to its own branch, so it cannot delete
 another session's branch from inside the sandbox: delete merged branches from
-the PR page on GitHub. Remote branches as of the evening of 2026-11-11:
+the PR page on GitHub. Check open PRs (not just `git log`) before calling a
+branch PR-less; a PR can appear minutes after its branch. Remote branches and their PRs as of 2026-11-12:
 
 | Branch | State |
 | --- | --- |
-| `main` | Trunk. Head `cc30f8b` (PR #15), after PR #16 at `3be39eb` |
+| `main` | Trunk, deployed to production |
 | `claude/bold-fermi-ptacmj` | **Merged** as PR #16 (test type fixes). Safe to delete |
-| `claude/keen-davinci-oiw14l` | PR #13's branch plus one unmerged commit, `f76e6f7`, adding a server-action upload gotcha. **Superseded**: that gotcha landed on `main` through PR #15. Safe to delete; merging it would duplicate the section |
-| `claude/email-compose-event-styling-ec36e2` | **Active, no PR yet.** One commit, `157906b`, carrying the featured event's design into prefilled announcement emails |
-| `claude/festive-noether-r9c67n` | The session branch for this doc's updates (PRs #15 and the follow-up). Delete once the follow-up merges |
+| `claude/keen-davinci-oiw14l` | PR #18, **closed unmerged** as superseded: its one commit, `f76e6f7`, adds the same server-action upload gotcha PR #15 already put on `main`. Safe to delete |
+| `claude/email-compose-event-styling-ec36e2` | **In review as PR #17.** One commit, `157906b`, carrying the featured event's design into prefilled announcement emails. Merges cleanly with `main`; tsc, 169 tests, and lint pass on the merge |
+| `claude/festive-noether-r9c67n` | The session branch for this doc's updates (PRs #15, #19, and the branch-table fix after them). Delete once that fix merges |
 
 Production deploys come from `main` only. The most recent production deploys are
 PR #12 (close-out skill), PR #13 (event uploads and start time), PR #14 (admin
